@@ -13,7 +13,7 @@
   --paper:#FFFFFF;          /* the canvas */
   --ink:#17161C;            /* charcoal text */
   --ink-2:#4B4A55;
-  --ink-3:#77768A;
+  --ink-3:#77768A;endar
   --rule:#E5E4EC;
   --mist:#F5F4F9;           /* rare, quiet panel */
   --blue:#2B3BF5;           /* dominant: electric blue */
@@ -740,7 +740,6 @@ We'll talk through how it currently works and explore whether automation makes s
             <div class="done" id="done" hidden tabindex="-1" aria-labelledby="doneTitle">
               <span class="done-mark" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
               <h3 id="doneTitle">Booking request ready</h3>
-              <p class="sub">Here&rsquo;s your summary. This is a demo, so nothing has been sent or added to a calendar.</p>
               <dl class="sum" id="sum"></dl>
               <div class="done-actions">
                 <button class="ghost" type="button" id="editBk">Edit details</button>
@@ -1143,9 +1142,12 @@ tickClock(); setInterval(tickClock, 30000);
 
 renderCal();
 })();
+   // Ensure render runs immediately on initial load
+renderCalendar();
 </script>
 
 </body></html>
+
 <!-- JAVASCRIPT FOR SUBMISSION -->
   <script>
     document.getElementById('booking-form').addEventListener('submit', async function(e) {
