@@ -445,6 +445,14 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .confirm:active{transform:scale(.98)}
 .form-err{padding:10px 12px;border-radius:10px;background:rgba(255,92,62,.1);font-size:.82rem;color:var(--coral-ink)}
 .demo-tag{text-align:center;font-size:.72rem;color:var(--ink-3)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.confirm:disabled{opacity:.7;cursor:progress}
+.modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgba(23,22,28,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fadeIn .25s ease both}
+.modal-card{display:grid;gap:16px;width:min(100%,440px);max-height:100%;overflow-y:auto;padding:28px 24px 24px;border-radius:24px;background:var(--paper);box-shadow:0 40px 90px -30px rgba(23,22,28,.6);animation:rise .45s var(--ease) both}
+.modal-card:focus{outline:none}
+.modal-card h3{text-align:center;font:400 2.1rem/1.05 var(--serif)}
+.m-sub{text-align:center;font-size:.95rem;line-height:1.55;color:var(--ink-2)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .done{display:grid;gap:16px;animation:rise .5s var(--ease) both}
 .done-mark{display:grid;place-items:center;width:64px;height:64px;margin:10px auto 0;border-radius:50%;background:var(--lime)}
 .done-mark svg{width:28px;height:28px}
@@ -694,8 +702,8 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
       <h2 class="display" id="bookTitle">Let&rsquo;s talk about <em>your workflow.</em></h2>
       <p class="lede">Have a process that feels unnecessarily complicated? Let&rsquo;s discuss what&rsquo;s happening and explore whether automation could help.</p>
       <div class="demo-note" role="note">
-        <b>Booking preview</b>
-        <p>This booking form is a front-end demonstration. Confirming shows a summary only. Nothing is sent, emailed, or added to a calendar until a calendar or booking backend is connected.</p>
+        <b>How booking works</b>
+        <p>Pick a day and a time that suit you. When you confirm, the call goes straight onto my calendar and you&rsquo;ll get a calendar invitation by email.</p>
       </div>
     </div>
     <div class="stage">
@@ -728,29 +736,20 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
                   </div>
                   <div class="dow" aria-hidden="true"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
                   <div class="days" id="calDays" role="group" aria-labelledby="dateLegend calMonth"></div>
-                  <p class="cal-foot">Sample availability: weekdays.</p>
+                  <p class="cal-foot">Available on weekdays.</p>
                 </div>
                 <p class="err" id="err-date"></p>
               </fieldset>
               <fieldset class="fld">
                 <legend>Time</legend>
                 <div class="slots" id="slots" aria-describedby="err-time"></div>
-                <p class="slots-hint" id="slotsHint">Sample time slots.</p>
+                <p class="slots-hint" id="slotsHint" aria-live="polite">Choose a date to see open times.</p>
                 <p class="err" id="err-time"></p>
               </fieldset>
-              <button class="confirm" type="submit">Confirm Booking</button>
-              <p class="demo-tag">Demo only. Nothing is sent.</p>
+              <div class="hp" aria-hidden="true"><label for="bk-website">Website</label><input id="bk-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+              <button class="confirm" type="submit" id="bkSubmit">Confirm Booking</button>
+              <p class="demo-tag">You&rsquo;ll receive a calendar invitation by email.</p>
             </form>
-            <div class="done" id="done" hidden tabindex="-1" aria-labelledby="doneTitle">
-              <span class="done-mark" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
-              <h3 id="doneTitle">Booking request ready</h3>
-              <p class="sub">Here&rsquo;s your summary. This is a demo, so nothing has been sent or added to a calendar.</p>
-              <dl class="sum" id="sum"></dl>
-              <div class="done-actions">
-                <button class="ghost" type="button" id="editBk">Edit details</button>
-                <button class="ghost" type="button" id="newBk">Start over</button>
-              </div>
-            </div>
           </div>
           <span class="home-bar" aria-hidden="true"></span>
         </div>
@@ -777,6 +776,17 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
   </div>
 </section>
 </main>
+
+<!-- Appointment confirmation popup: opens only after the calendar has accepted the booking -->
+<div class="modal" id="bkModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mDesc" tabindex="-1">
+    <span class="done-mark" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
+    <h3 id="mTitle">Appointment confirmed</h3>
+    <p class="m-sub" id="mDesc"></p>
+    <dl class="sum" id="mSum"></dl>
+    <button class="confirm" type="button" id="mDone">Done</button>
+  </div>
+</div>
 
 <script>
 /* =====================================================================
@@ -832,15 +842,14 @@ var PROJECTS = [
   { label: "PROJECT 03 — INSERT PROJECT IMAGE", image: "", title: "", problem: "", overview: "", tools: "", status: "" }
 ];
 
-// Sample availability for the booking demo. Replace with real availability from your calendar backend.
+// Bookable days and times. Keep these the same as WEEKDAYS and SLOTS in booking-apps-script.gs.
 var AVAILABILITY = { weekdays: [1,2,3,4,5], slots: ["9:00 AM","10:30 AM","1:00 PM","2:30 PM","4:00 PM","5:30 PM"], monthsAhead: 2 };
 
-/* Booking adapter: the form calls BOOKING.submit(data) and shows the summary when it resolves.
-   To go live, replace submit() with a call to your own backend (for example an endpoint that creates
-   a Google Calendar event) and return { ok: true } or { ok: false, message: "..." }. The interface stays the same. */
+/* Live booking. Paste the Web app URL from your Google Apps Script deployment (it ends in /exec).
+   The page asks it which times are free on a chosen date, then sends the booking to it.
+   The script adds the event to your Google Calendar and emails the client an invitation. */
 var BOOKING = {
-  live: false,
-  submit: function (data) { return Promise.resolve({ ok: true, demo: true, data: data }); }
+  endpoint: ""
 };
 
 /* ===================================================================== */
@@ -987,7 +996,6 @@ function activeNav() {
 /* "Ask about this" preselects the service in the booking form */
 $('#solGrid').addEventListener('click', function (e) {
   var b = e.target.closest('[data-ask]'); if (!b) return;
-  backToForm(false);
   $('#bk-service').value = b.getAttribute('data-ask');
   clearErr('service');
   $('#contact').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
@@ -1122,6 +1130,7 @@ $('#calDays').addEventListener('click', function (e) {
   var b = e.target.closest('.day'); if (!b || b.disabled) return;
   state.date = new Date(view.getFullYear(), view.getMonth(), +b.getAttribute('data-d'));
   clearErr('date'); renderCal(+b.getAttribute('data-d'));
+  loadAvailability(state.date);
 });
 $('#calDays').addEventListener('keydown', function (e) {
   var b = e.target.closest('.day'); if (!b) return;
@@ -1136,6 +1145,40 @@ $('#slots').innerHTML = AVAILABILITY.slots.map(function (s, i) {
   return '<div class="slot-opt"><input type="radio" name="time" id="slot-' + i + '" value="' + esc(s) + '"><label for="slot-' + i + '">' + esc(s) + '</label></div>';
 }).join('');
 $('#slots').addEventListener('change', function (e) { state.time = e.target.value; clearErr('time'); });
+
+/* ---------- booking: live availability and submission ---------- */
+var tzName = '';
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function setHint(t) { $('#slotsHint').textContent = t; }
+function tzLine() { return tzName ? 'Times are shown in ' + tzName + ' time.' : ''; }
+function setSlots(taken, busy) {
+  $$('#slots input').forEach(function (inp) {
+    var off = busy || taken.indexOf(inp.value) > -1;
+    inp.disabled = off;
+    if (off && inp.checked) { inp.checked = false; state.time = ''; }
+  });
+}
+var availReq = 0;
+function loadAvailability(date) {
+  if (!BOOKING.endpoint) { setSlots([], false); setHint(''); return Promise.resolve(); }
+  var id = ++availReq;
+  setSlots([], true); setHint('Checking open times\u2026');
+  return fetch(BOOKING.endpoint + '?date=' + ymd(date))
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (id !== availReq) return;
+      if (!res || !res.ok) throw new Error((res && res.message) || 'Unavailable');
+      if (res.timezone) tzName = res.timezone;
+      setSlots(res.taken || [], false);
+      var open = $$('#slots input').filter(function (i) { return !i.disabled; }).length;
+      setHint(open ? tzLine() || 'Choose a time.' : 'Every time on this day is booked. Please choose another date.');
+    })
+    .catch(function () {
+      if (id !== availReq) return;
+      setSlots([], false);
+      setHint('Open times couldn\u2019t be loaded. You can still pick a time; it\u2019s checked again when you confirm.');
+    });
+}
 $('#bk-service').insertAdjacentHTML('beforeend', SERVICES.map(function (s) { return '<option>' + esc(s.t) + '</option>'; }).join('') + '<option>Not sure yet</option>');
 
 /* ---------- booking: validation and submit ---------- */
@@ -1169,23 +1212,49 @@ $('#bkForm').addEventListener('submit', function (e) {
     var f = $(v.bad[0]); if (f) f.focus();
     return;
   }
-  BOOKING.submit(v.data).then(function (res) {
-    if (!res || !res.ok) { var fe = $('#formErr'); fe.textContent = (res && res.message) || 'The booking could not be completed. Try again.'; fe.hidden = false; return; }
-    var rows = [['Name', v.data.name], ['Email', v.data.email], ['Service', v.data.service], ['Date', fmtLong.format(v.data.date)], ['Time', v.data.time], ['Message', v.data.message || 'None']];
-    $('#sum').innerHTML = rows.map(function (r) { return '<div><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
-    $('#bkForm').hidden = true; $('#done').hidden = false; $('#appScroll').scrollTop = 0; $('#done').focus();
-  });
+  var fe = $('#formErr'), btn = $('#bkSubmit');
+  if (!BOOKING.endpoint) { fe.textContent = 'Online booking isn\u2019t connected yet. Add the booking web app URL to BOOKING.endpoint in this page.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking\u2026'; fe.hidden = true;
+  var payload = { name: v.data.name, email: v.data.email, service: v.data.service, message: v.data.message, date: ymd(v.data.date), time: v.data.time, website: $('#bk-website').value };
+  // text/plain keeps this a simple request, which Google Apps Script web apps accept from any website
+  fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok) {
+        fe.textContent = (res && res.message) || 'The booking couldn\u2019t be completed. Please try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' });
+        if (res && res.code === 'taken') loadAvailability(v.data.date);
+        return;
+      }
+      if (res.timezone) tzName = res.timezone;
+      openModal(v.data, res);
+      resetForm();
+    })
+    .catch(function () { fe.textContent = 'The booking service couldn\u2019t be reached. Check your connection and try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); })
+    .then(function () { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Confirm Booking'; });
 });
-function backToForm(reset) {
-  if (reset) {
-    $('#bkForm').reset(); state = { date: null, time: '' };
-    view = new Date(today.getFullYear(), today.getMonth(), 1);
-    ['name', 'email', 'service', 'date', 'time'].forEach(clearErr); renderCal();
-  }
-  $('#done').hidden = true; $('#bkForm').hidden = false;
+function resetForm() {
+  $('#bkForm').reset(); state = { date: null, time: '' };
+  view = new Date(today.getFullYear(), today.getMonth(), 1);
+  ['name', 'email', 'service', 'date', 'time'].forEach(clearErr); renderCal(); setSlots([], false);
+  setHint('Choose a date to see open times.'); $('#appScroll').scrollTop = 0;
 }
-$('#editBk').addEventListener('click', function () { backToForm(false); $('#appScroll').scrollTop = 0; $('#bk-name').focus(); });
-$('#newBk').addEventListener('click', function () { backToForm(true); $('#appScroll').scrollTop = 0; $('#bk-name').focus(); });
+var modal = $('#bkModal'), lastFocus = null;
+function openModal(d, res) {
+  var when = res.when || (fmtLong.format(d.date) + ' at ' + d.time);
+  $('#mDesc').textContent = 'You\u2019re booked for ' + when + '. A calendar invitation has been sent to ' + d.email + '.';
+  var rows = [['Date', fmtLong.format(d.date)], ['Time', d.time + (tzName ? ' (' + tzName + ')' : '')], ['Service', d.service], ['Name', d.name], ['Email', d.email]];
+  $('#mSum').innerHTML = rows.map(function (r) { return '<div><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
+  lastFocus = document.activeElement; modal.hidden = false; document.body.style.overflow = 'hidden';
+  $('#mDone').focus();
+}
+function closeModal() { modal.hidden = true; document.body.style.overflow = ''; if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); }
+$('#mDone').addEventListener('click', closeModal);
+modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', function (e) {
+  if (modal.hidden) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Tab') { e.preventDefault(); $('#mDone').focus(); }
+});
 
 /* status-bar clock */
 function tickClock() { var n = new Date(); $('#clock').textContent = n.getHours() % 12 || 12; $('#clock').textContent += ':' + String(n.getMinutes()).padStart(2, '0'); }
