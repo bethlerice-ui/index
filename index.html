@@ -710,8 +710,11 @@ We'll talk through how it currently works and explore whether automation makes s
               <p class="form-err" id="formErr" role="alert" hidden></p>
               <div class="fld"><label for="bk-name">Name</label><input class="inp" id="bk-name" name="name" type="text" autocomplete="name" required aria-describedby="err-name"><p class="err" id="err-name"></p></div>
 <div class="form-group">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" required placeholder="your.email@example.com">
+         <div class="form-group">
+  <label for="email">Email Address</label>
+  <!-- Make sure it uses your input class, e.g., class="form-input" or width: 100% style -->
+  <input type="email" id="email" required placeholder="your.email@example.com" style="width: 100%; padding: 12px; box-sizing: border-box;">
+</div>
         </div>              <div class="fld"><label for="bk-service">Service needed</label><select class="inp" id="bk-service" name="service" required aria-describedby="err-service"><option value="">Choose a service</option></select><p class="err" id="err-service"></p></div>
               <div class="fld"><label for="bk-msg">Message</label><textarea class="inp" id="bk-msg" name="message" rows="3" placeholder="What process would you like to improve?"></textarea></div>
               <fieldset class="fld">
