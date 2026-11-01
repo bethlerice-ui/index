@@ -1146,3 +1146,37 @@ renderCal();
 </script>
 
 </body></html>
+<!-- JAVASCRIPT FOR SUBMISSION -->
+  <script>
+    document.getElementById('booking-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        service: document.getElementById('service').value,
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        message: document.getElementById('message').value.trim()
+      };
+
+      try {
+        const response = await fetch('https://flowhq.app.n8n.cloud/webhook/beth-booking', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          alert('Booking submitted successfully!');
+          document.getElementById('booking-form').reset();
+        } else {
+          alert('Failed to submit. Please try again.');
+        }
+      } catch (error) {
+        alert('Connection error occurred.');
+      }
+    });
+  </script>
