@@ -709,7 +709,7 @@ We'll talk through how it currently works and explore whether automation makes s
             <form class="bk-form" id="bkForm" novalidate>
               <p class="form-err" id="formErr" role="alert" hidden></p>
               <div class="fld"><label for="bk-name">Name</label><input class="inp" id="bk-name" name="name" type="text" autocomplete="name" required aria-describedby="err-name"><p class="err" id="err-name"></p></div>
-<div class="fld"><label for="bk-email">Email Address</label><input class="inp" id="bk-email" name="email" type="email" placeholder="your.email@example.com" required></div>
+            <div class="fld"><label for="bk-email">Email Address</label><input class="inp" id="bk-email" name="email" type="email" placeholder="your.email@example.com" required></div>
                <div class="fld"><label for="bk-service">Service needed</label><select class="inp" id="bk-service" name="service" required aria-describedby="err-service"><option value="">Choose a service</option></select><p class="err" id="err-service"></p></div>
               <div class="fld"><label for="bk-msg">Message</label><textarea class="inp" id="bk-msg" name="message" rows="3" placeholder="What process would you like to improve?"></textarea></div>
               <fieldset class="fld">
@@ -1151,14 +1151,14 @@ renderCal();
     document.getElementById('booking-form').addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      const payload = {
-        name: document.getElementById('name').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        service: document.getElementById('service').value,
-        date: document.getElementById('date').value,
-        time: document.getElementById('time').value,
-        message: document.getElementById('message').value.trim()
-      };
+     const payload = {
+  name: document.getElementById('bk-name').value.trim(),
+  email: document.getElementById('bk-email').value.trim(),
+  service: document.getElementById('bk-service').value,
+  date: document.getElementById('bk-date') ? document.getElementById('bk-date').value : '',
+  time: document.getElementById('bk-time') ? document.getElementById('bk-time').value : '',
+  message: document.getElementById('bk-msg').value.trim()
+};
 
       try {
         const response = await fetch('https://flowhq.app.n8n.cloud/webhook/beth-booking', {
