@@ -1216,7 +1216,7 @@ $('#bkForm').addEventListener('submit', function (e) {
     return;
   }
   var fe = $('#formErr'), btn = $('#bkSubmit');
-  if (!BOOKING.endpoint) { fe.textContent = 'Online booking isn\u2019t connected yet. Add the booking web app URL to BOOKING.endpoint in this page.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
+  if (!BOOKING.endpoint) { fe.textContent = 'https://index-jet-three-97.vercel.app'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
   btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking\u2026'; fe.hidden = true;
   var payload = { name: v.data.name, email: v.data.email, service: v.data.service, message: v.data.message, date: ymd(v.data.date), time: v.data.time, website: $('#bk-website').value };
   // text/plain keeps this a simple request, which Google Apps Script web apps accept from any website
