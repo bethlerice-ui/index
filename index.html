@@ -1,9 +1,5 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Less Busywork Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Personal portfolio: practical workflow automation for real estate professionals.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -435,27 +431,14 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .day.today{box-shadow:inset 0 0 0 1.5px var(--rule)}
 .day[aria-pressed="true"]{background:var(--blue);color:#fff;font-weight:600}
 .cal-foot{margin-top:6px;font-size:.72rem;color:var(--ink-3)}
-/* time slots: one row per appointment — visitor's local time on the left, Pacific schedule time on the right */
-.slots{display:grid;gap:6px}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .slot-opt{position:relative}
 .slot-opt input{position:absolute;opacity:0;pointer-events:none}
-.slot-opt label{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:8px 12px;border:1.5px solid var(--rule);border-radius:12px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .2s,border-color .2s,color .2s}
+.slot-opt label{display:grid;place-items:center;min-height:40px;border:1.5px solid var(--rule);border-radius:10px;font-size:.84rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .2s,border-color .2s,color .2s}
 .slot-opt label:hover{border-color:var(--ink)}
-.slot-opt .lt{display:grid;gap:2px;min-width:0}
-.slot-opt .lt b{font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums}
-.slot-opt .lt small{font-size:.74rem;color:var(--ink-3)}
-.slot-opt .pt{flex:none;font:500 .62rem/1.45 var(--mono);letter-spacing:.04em;text-align:right;color:var(--ink-3)}
-.slot-opt input:checked+label{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.slot-opt input:checked+label small,.slot-opt input:checked+label .pt{color:rgba(255,255,255,.72)}
+.slot-opt input:checked+label{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 .slot-opt input:focus-visible+label{outline:2.5px solid var(--blue);outline-offset:2px}
-.slot-opt input:disabled+label{color:#9E9DAB;border-style:dashed;cursor:not-allowed}
-.slots-empty{padding:12px;border:1.5px dashed var(--rule);border-radius:12px;font-size:.84rem;color:var(--ink-3);text-align:center}
-.tz-note{font-size:.74rem;color:var(--ink-3)}
-.leg-note{font-weight:400;color:var(--ink-3)}
-.day{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-/* stacked layout (tablets and phones): the phone frame grows with the form instead of scrolling inside itself,
-   so the calendar, dropdowns and button are never clipped or trapped in a nested scroll area */
-@media (max-width:980px){.phone{height:auto}.screen{height:auto}.app-scroll{flex:none;overflow:visible}}
+.slot-opt input:disabled+label{color:#BEBDC8;border-style:dashed;cursor:not-allowed}
 .slots-hint{font-size:.74rem;color:var(--ink-3)}
 .confirm{width:100%;min-height:52px;border:0;border-radius:14px;background:var(--blue);color:#fff;font:600 1rem/1 var(--sans);cursor:pointer;transition:background-color .25s,transform .3s var(--ease)}
 .confirm:hover{background:var(--blue-deep)}
@@ -486,7 +469,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .home-bar{position:absolute;bottom:8px;left:50%;width:120px;height:4.5px;border-radius:4px;background:var(--ink);transform:translateX(-50%);opacity:.85}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media (max-width:980px){.book-grid{grid-template-columns:1fr}}
-@media (max-width:420px){.phone{padding:10px;border-radius:50px}.screen{border-radius:40px}.app-scroll{padding:14px 14px 24px}}
+@media (max-width:420px){.phone{height:700px;padding:10px;border-radius:50px}.screen{border-radius:40px}.app-scroll{padding:14px 14px 24px}.slots{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* ---------- final CTA ---------- */
 .final{padding-block:clamp(100px,11vw,170px) clamp(60px,6vw,90px)}
@@ -516,8 +499,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
   .track,.strip-track,.badge svg{animation:none!important}
 }
 </style>
-</head>
-<body>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
@@ -721,7 +703,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
       <p class="lede">Have a process that feels unnecessarily complicated? Let&rsquo;s discuss what&rsquo;s happening and explore whether automation could help.</p>
       <div class="demo-note" role="note">
         <b>How booking works</b>
-        <p>Choose your time zone, then a date and time. My schedule runs on Pacific Time, and every time is shown converted to the zone you pick, so you always see your own local time.</p>
+        <p>Pick a day and a time that suit you. When you confirm, the call goes straight onto my calendar and you&rsquo;ll get a calendar invitation by email.</p>
       </div>
     </div>
     <div class="stage">
@@ -742,9 +724,8 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
               <div class="fld"><label for="bk-email">Email</label><input class="inp" id="bk-email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="err-email"><p class="err" id="err-email"></p></div>
               <div class="fld"><label for="bk-service">Service needed</label><select class="inp" id="bk-service" name="service" required aria-describedby="err-service"><option value="">Choose a service</option></select><p class="err" id="err-service"></p></div>
               <div class="fld"><label for="bk-msg">Message</label><textarea class="inp" id="bk-msg" name="message" rows="3" placeholder="What process would you like to improve?"></textarea></div>
-              <div class="fld"><label for="bk-tz">Your time zone</label><select class="inp" id="bk-tz" name="visitorTimeZone" aria-describedby="tzNote"></select><p class="tz-note" id="tzNote">Appointment times are shown in this time zone.</p></div>
               <fieldset class="fld">
-                <legend id="dateLegend">Date <span class="leg-note">(Pacific Time schedule)</span></legend>
+                <legend id="dateLegend">Date</legend>
                 <div class="cal" id="cal" aria-describedby="err-date">
                   <div class="cal-head">
                     <b id="calMonth" aria-live="polite"></b>
@@ -755,19 +736,19 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
                   </div>
                   <div class="dow" aria-hidden="true"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
                   <div class="days" id="calDays" role="group" aria-labelledby="dateLegend calMonth"></div>
-                  <p class="cal-foot">Monday to Thursday. Each date has a 10 PM, 12 AM and 2 AM Pacific appointment; the 12 AM and 2 AM times fall on the next Pacific day.</p>
+                  <p class="cal-foot">Available on weekdays.</p>
                 </div>
                 <p class="err" id="err-date"></p>
               </fieldset>
               <fieldset class="fld">
                 <legend>Time</legend>
-                <div class="slots" id="slots" aria-describedby="err-time slotsHint"></div>
-                <p class="slots-hint" id="slotsHint" aria-live="polite"></p>
+                <div class="slots" id="slots" aria-describedby="err-time"></div>
+                <p class="slots-hint" id="slotsHint" aria-live="polite">Choose a date to see open times.</p>
                 <p class="err" id="err-time"></p>
               </fieldset>
               <div class="hp" aria-hidden="true"><label for="bk-website">Website</label><input id="bk-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
               <button class="confirm" type="submit" id="bkSubmit">Confirm Booking</button>
-              <p class="demo-tag">Your booking is confirmed on screen once my calendar accepts it.</p>
+              <p class="demo-tag">You&rsquo;ll receive a calendar invitation by email.</p>
             </form>
           </div>
           <span class="home-bar" aria-hidden="true"></span>
@@ -861,50 +842,15 @@ var PROJECTS = [
   { label: "PROJECT 03 — INSERT PROJECT IMAGE", image: "", title: "", problem: "", overview: "", tools: "", status: "" }
 ];
 
-/* ====================== BOOKING SETTINGS (start) ======================
-   The business schedule is always Pacific Time. Visitors see it converted to the time zone they choose. */
-var SCHEDULE = {
-  timeZone: "America/Los_Angeles",
-  weekdays: [1, 2, 3, 4],              // schedule dates: 0 = Sunday, 1 = Monday ... 4 = Thursday
-  slots: [                             // dayOffset 1 = the calendar day after the schedule date (Pacific)
-    { label: "10:00 PM", hour: 22, minute: 0, dayOffset: 0 },
-    { label: "12:00 AM", hour: 0,  minute: 0, dayOffset: 1 },
-    { label: "2:00 AM",  hour: 2,  minute: 0, dayOffset: 1 }
-  ],
-  durationMinutes: 25,
-  minNoticeMinutes: 0,                 // slots must start after now + this many minutes
-  monthsAhead: 2
-};
+// Bookable days and times. Keep these the same as WEEKDAYS and SLOTS in booking-apps-script.gs.
+var AVAILABILITY = { weekdays: [1,2,3,4,5], slots: ["9:00 AM","10:30 AM","1:00 PM","2:30 PM","4:00 PM","5:30 PM"], monthsAhead: 2 };
 
-// Time zones visitors can choose (IANA names). The visitor's own browser zone is added automatically if missing.
-var TIME_ZONES = [
-  { id: "America/Los_Angeles", label: "Pacific Time" },
-  { id: "America/Denver",      label: "Mountain Time" },
-  { id: "America/Phoenix",     label: "Arizona Time" },
-  { id: "America/Chicago",     label: "Central Time" },
-  { id: "America/New_York",    label: "Eastern Time" },
-  { id: "America/Anchorage",   label: "Alaska Time" },
-  { id: "Pacific/Honolulu",    label: "Hawaii Time" },
-  { id: "America/Toronto",     label: "Toronto" },
-  { id: "America/Mexico_City", label: "Mexico City" },
-  { id: "America/Sao_Paulo",   label: "S\u00e3o Paulo" },
-  { id: "Europe/London",       label: "London" },
-  { id: "Europe/Paris",        label: "Paris / Central Europe" },
-  { id: "Africa/Johannesburg", label: "Johannesburg" },
-  { id: "Asia/Dubai",          label: "Dubai" },
-  { id: "Asia/Kolkata",        label: "India" },
-  { id: "Asia/Manila",         label: "Manila" },
-  { id: "Asia/Singapore",      label: "Singapore" },
-  { id: "Asia/Tokyo",          label: "Tokyo" },
-  { id: "Australia/Sydney",    label: "Sydney" },
-  { id: "Pacific/Auckland",    label: "Auckland" }
-];
-
-// Bookings are sent to this address on your own site (api/booking.js on Vercel), which forwards them to n8n.
+/* Live booking. Paste the Web app URL from your Google Apps Script deployment (it ends in /exec).
+   The page asks it which times are free on a chosen date, then sends the booking to it.
+   The script adds the event to your Google Calendar and emails the client an invitation. */
 var BOOKING = {
-  endpoint: "/api/booking"
+  endpoint: ""
 };
-/* ====================== BOOKING SETTINGS (end) ====================== */
 
 /* ===================================================================== */
 (function () {
@@ -1118,7 +1064,7 @@ frame();
 
 /* ---------- approach: step animations (hover, focus, or tap) ---------- */
 (function () {
-  var items = $$('.step'), btns = items.map(function (li) { return $('.step-n', li); }), pinned = -1, hoverIdx = -1, autoIdx = -1, applied = -2, pinY = 0, handed = false;
+  var items = $$('.step'), btns = items.map(function (li) { return $('.step-n', li); }), pinned = -1, hoverIdx = -1, autoIdx = -1, applied = -2, pinY = 0;
   function burst(li) { var fx = $('.fx-done', li); if (!fx || reduce) return; fx.classList.remove('burst'); void fx.offsetWidth; fx.classList.add('burst'); }
   function setOn(i, on) {
     var li = items[i], was = li.classList.contains('on');
@@ -1126,18 +1072,16 @@ frame();
     if (on && !was) burst(li);
   }
   function only(i) { applied = i; items.forEach(function (_, k) { if (k !== i) setOn(k, false); }); if (i > -1) setOn(i, true); }
-  // after a hover, tap or keypress the visitor is in control: leaving a number clears it instead of jumping back to the scroll step
-  function resume() { only(pinned > -1 ? pinned : (handed ? -1 : autoIdx)); }
-  function takeOver() { handed = true; pinY = window.scrollY; }
+  function resume() { only(pinned > -1 ? pinned : autoIdx); }
   items.forEach(function (li, i) {
     var b = btns[i];
-    li.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { takeOver(); hoverIdx = i; only(i); } });
+    li.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { hoverIdx = i; only(i); } });
     li.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { hoverIdx = -1; resume(); } });
     b.addEventListener('click', function () {
       if (pinned === i && items[i].classList.contains('on')) { pinned = -1; setOn(i, false); applied = -1; return; }
-      takeOver(); pinned = i; only(i); if (i === items.length - 1) burst(items[i]);
+      pinned = i; pinY = window.scrollY; only(i); if (i === items.length - 1) burst(items[i]);
     });
-    b.addEventListener('focus', function () { if (b.matches(':focus-visible')) { takeOver(); pinned = i; only(i); } });
+    b.addEventListener('focus', function () { if (b.matches(':focus-visible')) { pinned = i; pinY = window.scrollY; only(i); } });
     b.addEventListener('blur', function (e) { var t = e.relatedTarget; if (t && !t.closest('.step-n') && pinned === i) { pinned = -1; resume(); } });
     b.addEventListener('keydown', function (e) {
       var j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: btns.length - 1 }[e.key];
@@ -1148,9 +1092,8 @@ frame();
   // scrolling hands control back after a tap or keypress once the visitor has moved on
   stepAuto = function (idx) {
     autoIdx = idx;
-    // scrolling on (or leaving the timeline) hands control back to the scroll animation
-    if (handed && (idx === -1 || Math.abs(window.scrollY - pinY) > 140)) { handed = false; pinned = -1; }
-    if (handed || hoverIdx > -1 || idx === applied) return;
+    if (pinned > -1 && Math.abs(window.scrollY - pinY) > 140) pinned = -1;
+    if (pinned > -1 || hoverIdx > -1 || idx === applied) return;
     only(idx);
   };
   frame();
