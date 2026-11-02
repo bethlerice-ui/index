@@ -1064,7 +1064,7 @@ frame();
 
 /* ---------- approach: step animations (hover, focus, or tap) ---------- */
 (function () {
-  var items = $$('.step'), btns = items.map(function (li) { return $('.step-n', li); }), pinned = -1, hoverIdx = -1, autoIdx = -1, applied = -2, pinY = 0;
+  var items = $$('.step'), btns = items.map(function (li) { return $('.step-n', li); }), pinned = -1, hoverIdx = -1, autoIdx = -1, applied = -2, pinY = 0, handed = false;
   function burst(li) { var fx = $('.fx-done', li); if (!fx || reduce) return; fx.classList.remove('burst'); void fx.offsetWidth; fx.classList.add('burst'); }
   function setOn(i, on) {
     var li = items[i], was = li.classList.contains('on');
@@ -1072,16 +1072,18 @@ frame();
     if (on && !was) burst(li);
   }
   function only(i) { applied = i; items.forEach(function (_, k) { if (k !== i) setOn(k, false); }); if (i > -1) setOn(i, true); }
-  function resume() { only(pinned > -1 ? pinned : autoIdx); }
+  // after a hover, tap or keypress the visitor is in control: leaving a number clears it instead of jumping back to the scroll step
+  function resume() { only(pinned > -1 ? pinned : (handed ? -1 : autoIdx)); }
+  function takeOver() { handed = true; pinY = window.scrollY; }
   items.forEach(function (li, i) {
     var b = btns[i];
-    li.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { hoverIdx = i; only(i); } });
+    li.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { takeOver(); hoverIdx = i; only(i); } });
     li.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { hoverIdx = -1; resume(); } });
     b.addEventListener('click', function () {
       if (pinned === i && items[i].classList.contains('on')) { pinned = -1; setOn(i, false); applied = -1; return; }
-      pinned = i; pinY = window.scrollY; only(i); if (i === items.length - 1) burst(items[i]);
+      takeOver(); pinned = i; only(i); if (i === items.length - 1) burst(items[i]);
     });
-    b.addEventListener('focus', function () { if (b.matches(':focus-visible')) { pinned = i; pinY = window.scrollY; only(i); } });
+    b.addEventListener('focus', function () { if (b.matches(':focus-visible')) { takeOver(); pinned = i; only(i); } });
     b.addEventListener('blur', function (e) { var t = e.relatedTarget; if (t && !t.closest('.step-n') && pinned === i) { pinned = -1; resume(); } });
     b.addEventListener('keydown', function (e) {
       var j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: btns.length - 1 }[e.key];
@@ -1092,8 +1094,9 @@ frame();
   // scrolling hands control back after a tap or keypress once the visitor has moved on
   stepAuto = function (idx) {
     autoIdx = idx;
-    if (pinned > -1 && Math.abs(window.scrollY - pinY) > 140) pinned = -1;
-    if (pinned > -1 || hoverIdx > -1 || idx === applied) return;
+    // scrolling on (or leaving the timeline) hands control back to the scroll animation
+    if (handed && (idx === -1 || Math.abs(window.scrollY - pinY) > 140)) { handed = false; pinned = -1; }
+    if (handed || hoverIdx > -1 || idx === applied) return;
     only(idx);
   };
   frame();
