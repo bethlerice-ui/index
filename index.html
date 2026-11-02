@@ -843,13 +843,18 @@ var PROJECTS = [
 ];
 
 // Bookable days and times. Keep these the same as WEEKDAYS and SLOTS in booking-apps-script.gs.
-var AVAILABILITY = { weekdays: [1,2,3,4,5], slots: ["9:00 AM","10:30 AM","1:00 PM","2:30 PM","4:00 PM","5:30 PM"], monthsAhead: 2 };
+var AVAILABILITY = {
+  weekdays: [1, 2, 3, 4],
+  slots: ["10:00 PM", "12:00 AM", "2:00 AM"],
+  monthsAhead: 2,
+  timezone: "America/Los_Angeles"
+};
 
 /* Live booking. Paste the Web app URL from your Google Apps Script deployment (it ends in /exec).
    The page asks it which times are free on a chosen date, then sends the booking to it.
    The script adds the event to your Google Calendar and emails the client an invitation. */
 var BOOKING = {
-  endpoint: ""
+  endpoint: "/api/booking"
 };
 
 /* ===================================================================== */
