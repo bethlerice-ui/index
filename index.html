@@ -843,13 +843,18 @@ var PROJECTS = [
 ];
 
 // Bookable days and times. Keep these the same as WEEKDAYS and SLOTS in booking-apps-script.gs.
-var AVAILABILITY = { weekdays: [1,2,3,4,5], slots: ["9:00 AM","10:30 AM","1:00 PM","2:30 PM","4:00 PM","5:30 PM"], monthsAhead: 2 };
+var AVAILABILITY = {
+  weekdays: [1, 2, 3, 4],
+  slots: ["10:00 PM", "11:00 PM", "2:00 AM"],
+  monthsAhead: 2,
+  timezone: "America/Los_Angeles"
+};
 
 /* Live booking. Paste the Web app URL from your Google Apps Script deployment (it ends in /exec).
    The page asks it which times are free on a chosen date, then sends the booking to it.
    The script adds the event to your Google Calendar and emails the client an invitation. */
 var BOOKING = {
-  endpoint: ""
+  endpoint: "/api/booking"
 };
 
 /* ===================================================================== */
@@ -1103,46 +1108,174 @@ frame();
 })();
 
 /* ---------- booking: calendar ---------- */
-var today = new Date(); today.setHours(0, 0, 0, 0);
+/* ---------- booking: calendar ---------- */
+
+var pacificParts = new Intl.DateTimeFormat('en-US', {
+  timeZone: AVAILABILITY.timezone,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric'
+}).formatToParts(new Date());
+
+var pacificDate = {};
+pacificParts.forEach(function (part) {
+  if (part.type !== 'literal') {
+    pacificDate[part.type] = Number(part.value);
+  }
+});
+
+var today = new Date(
+  pacificDate.year,
+  pacificDate.month - 1,
+  pacificDate.day
+);
+
 var view = new Date(today.getFullYear(), today.getMonth(), 1);
-var maxView = new Date(today.getFullYear(), today.getMonth() + AVAILABILITY.monthsAhead, 1);
+
+var maxView = new Date(
+  today.getFullYear(),
+  today.getMonth() + AVAILABILITY.monthsAhead,
+  1
+);
+
 var state = { date: null, time: '' };
-var fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
-var fmtLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-function isOpen(d) { return d >= today && AVAILABILITY.weekdays.indexOf(d.getDay()) > -1; }
-function same(a, b) { return a && b && a.getTime() === b.getTime(); }
+
+var fmtMonth = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric'
+});
+
+var fmtLong = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric'
+});
+
+function isOpen(d) {
+  return d >= today &&
+    AVAILABILITY.weekdays.indexOf(d.getDay()) > -1;
+}
+
+function same(a, b) {
+  return a && b && a.getTime() === b.getTime();
+}
+
 function renderCal(focusDay) {
   $('#calMonth').textContent = fmtMonth.format(view);
-  $('#calPrev').disabled = view <= new Date(today.getFullYear(), today.getMonth(), 1);
+
+  $('#calPrev').disabled =
+    view <= new Date(today.getFullYear(), today.getMonth(), 1);
+
   $('#calNext').disabled = view >= maxView;
-  var first = view.getDay(), dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(), html = '';
-  for (var i = 0; i < first; i++) html += '<span aria-hidden="true"></span>';
-  for (var d = 1; d <= dim; d++) {
-    var dt = new Date(view.getFullYear(), view.getMonth(), d), open = isOpen(dt), sel = same(dt, state.date);
-    html += '<button type="button" class="day' + (same(dt, today) ? ' today' : '') + '" data-d="' + d + '" aria-label="' + fmtLong.format(dt) + (open ? '' : ', unavailable') + '" aria-pressed="' + sel + '"' + (open ? '' : ' disabled') + ' tabindex="-1">' + d + '</button>';
+
+  var first = view.getDay();
+  var dim = new Date(
+    view.getFullYear(),
+    view.getMonth() + 1,
+    0
+  ).getDate();
+
+  var html = '';
+
+  for (var i = 0; i < first; i++) {
+    html += '<span aria-hidden="true"></span>';
   }
+
+  for (var d = 1; d <= dim; d++) {
+    var dt = new Date(view.getFullYear(), view.getMonth(), d);
+    var open = isOpen(dt);
+    var sel = same(dt, state.date);
+
+    html += '<button type="button" class="day' +
+      (same(dt, today) ? ' today' : '') +
+      '" data-d="' + d +
+      '" aria-label="' + fmtLong.format(dt) +
+      (open ? '' : ', unavailable') +
+      '" aria-pressed="' + sel + '"' +
+      (open ? '' : ' disabled') +
+      ' tabindex="-1">' + d + '</button>';
+  }
+
   $('#calDays').innerHTML = html;
+
   var btns = $$('.day:not(:disabled)', $('#calDays'));
-  var target = (focusDay && $('.day[data-d="' + focusDay + '"]:not(:disabled)', $('#calDays'))) || $('.day[aria-pressed="true"]', $('#calDays')) || btns[0];
+
+  var target =
+    (focusDay && $('.day[data-d="' + focusDay + '"]:not(:disabled)', $('#calDays'))) ||
+    $('.day[aria-pressed="true"]', $('#calDays')) ||
+    btns[0];
+
   if (target) target.tabIndex = 0;
   if (focusDay && target) target.focus();
 }
-$('#calPrev').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); renderCal(); });
-$('#calNext').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); renderCal(); });
-$('#calDays').addEventListener('click', function (e) {
-  var b = e.target.closest('.day'); if (!b || b.disabled) return;
-  state.date = new Date(view.getFullYear(), view.getMonth(), +b.getAttribute('data-d'));
-  clearErr('date'); renderCal(+b.getAttribute('data-d'));
-  loadAvailability(state.date);
-});
-$('#calDays').addEventListener('keydown', function (e) {
-  var b = e.target.closest('.day'); if (!b) return;
-  var step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key]; if (!step) return;
-  e.preventDefault();
-  var d = +b.getAttribute('data-d'), dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(), n = d + step;
-  while (n >= 1 && n <= dim) { var cand = $('.day[data-d="' + n + '"]', $('#calDays')); if (cand && !cand.disabled) { $$('.day', $('#calDays')).forEach(function (x) { x.tabIndex = -1; }); cand.tabIndex = 0; cand.focus(); return; } n += step > 0 ? 1 : -1; }
+
+$('#calPrev').addEventListener('click', function () {
+  view = new Date(view.getFullYear(), view.getMonth() - 1, 1);
+  renderCal();
 });
 
+$('#calNext').addEventListener('click', function () {
+  view = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+  renderCal();
+});
+
+$('#calDays').addEventListener('click', function (e) {
+  var b = e.target.closest('.day');
+
+  if (!b || b.disabled) return;
+
+  state.date = new Date(
+    view.getFullYear(),
+    view.getMonth(),
+    +b.getAttribute('data-d')
+  );
+
+  clearErr('date');
+  renderCal(+b.getAttribute('data-d'));
+  loadAvailability(state.date);
+});
+
+$('#calDays').addEventListener('keydown', function (e) {
+  var b = e.target.closest('.day');
+  if (!b) return;
+
+  var step = {
+    ArrowLeft: -1,
+    ArrowRight: 1,
+    ArrowUp: -7,
+    ArrowDown: 7
+  }[e.key];
+
+  if (!step) return;
+
+  e.preventDefault();
+
+  var d = +b.getAttribute('data-d');
+  var dim = new Date(
+    view.getFullYear(),
+    view.getMonth() + 1,
+    0
+  ).getDate();
+
+  var n = d + step;
+
+  while (n >= 1 && n <= dim) {
+    var cand = $('.day[data-d="' + n + '"]', $('#calDays'));
+
+    if (cand && !cand.disabled) {
+      $$('.day', $('#calDays')).forEach(function (x) {
+        x.tabIndex = -1;
+      });
+
+      cand.tabIndex = 0;
+      cand.focus();
+      return;
+    }
+
+    n += step > 0 ? 1 : -1;
+  }
+});
 /* ---------- booking: time slots and services ---------- */
 $('#slots').innerHTML = AVAILABILITY.slots.map(function (s, i) {
   return '<div class="slot-opt"><input type="radio" name="time" id="slot-' + i + '" value="' + esc(s) + '"><label for="slot-' + i + '">' + esc(s) + '</label></div>';
@@ -1218,9 +1351,18 @@ $('#bkForm').addEventListener('submit', function (e) {
   var fe = $('#formErr'), btn = $('#bkSubmit');
   if (!BOOKING.endpoint) { fe.textContent = 'Online booking isn\u2019t connected yet. Add the booking web app URL to BOOKING.endpoint in this page.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
   btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking\u2026'; fe.hidden = true;
-  var payload = { name: v.data.name, email: v.data.email, service: v.data.service, message: v.data.message, date: ymd(v.data.date), time: v.data.time, website: $('#bk-website').value };
+  var payload = { name: v.data.name, evar payload = {
+  name: v.data.name,
+  email: v.data.email,
+  service: v.data.service,
+  message: v.data.message,
+  scheduleDate: ymd(v.data.date),
+  time: v.data.time,
+  timezone: AVAILABILITY.timezone,
+  website: $('#bk-website').value
+};
   // text/plain keeps this a simple request, which Google Apps Script web apps accept from any website
-  fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+  fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then(function (r) { return r.json(); })
     .then(function (res) {
       if (!res || !res.ok) {
