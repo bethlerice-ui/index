@@ -1,5 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Less Busywork Portfolio</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Personal portfolio: practical workflow automation for real estate professionals.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -431,14 +435,27 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .day.today{box-shadow:inset 0 0 0 1.5px var(--rule)}
 .day[aria-pressed="true"]{background:var(--blue);color:#fff;font-weight:600}
 .cal-foot{margin-top:6px;font-size:.72rem;color:var(--ink-3)}
-.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+/* time slots: one row per appointment — visitor's local time on the left, Pacific schedule time on the right */
+.slots{display:grid;gap:6px}
 .slot-opt{position:relative}
 .slot-opt input{position:absolute;opacity:0;pointer-events:none}
-.slot-opt label{display:grid;place-items:center;min-height:40px;border:1.5px solid var(--rule);border-radius:10px;font-size:.84rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .2s,border-color .2s,color .2s}
+.slot-opt label{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:8px 12px;border:1.5px solid var(--rule);border-radius:12px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .2s,border-color .2s,color .2s}
 .slot-opt label:hover{border-color:var(--ink)}
-.slot-opt input:checked+label{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
+.slot-opt .lt{display:grid;gap:2px;min-width:0}
+.slot-opt .lt b{font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums}
+.slot-opt .lt small{font-size:.74rem;color:var(--ink-3)}
+.slot-opt .pt{flex:none;font:500 .62rem/1.45 var(--mono);letter-spacing:.04em;text-align:right;color:var(--ink-3)}
+.slot-opt input:checked+label{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.slot-opt input:checked+label small,.slot-opt input:checked+label .pt{color:rgba(255,255,255,.72)}
 .slot-opt input:focus-visible+label{outline:2.5px solid var(--blue);outline-offset:2px}
-.slot-opt input:disabled+label{color:#BEBDC8;border-style:dashed;cursor:not-allowed}
+.slot-opt input:disabled+label{color:#9E9DAB;border-style:dashed;cursor:not-allowed}
+.slots-empty{padding:12px;border:1.5px dashed var(--rule);border-radius:12px;font-size:.84rem;color:var(--ink-3);text-align:center}
+.tz-note{font-size:.74rem;color:var(--ink-3)}
+.leg-note{font-weight:400;color:var(--ink-3)}
+.day{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* stacked layout (tablets and phones): the phone frame grows with the form instead of scrolling inside itself,
+   so the calendar, dropdowns and button are never clipped or trapped in a nested scroll area */
+@media (max-width:980px){.phone{height:auto}.screen{height:auto}.app-scroll{flex:none;overflow:visible}}
 .slots-hint{font-size:.74rem;color:var(--ink-3)}
 .confirm{width:100%;min-height:52px;border:0;border-radius:14px;background:var(--blue);color:#fff;font:600 1rem/1 var(--sans);cursor:pointer;transition:background-color .25s,transform .3s var(--ease)}
 .confirm:hover{background:var(--blue-deep)}
@@ -469,7 +486,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .home-bar{position:absolute;bottom:8px;left:50%;width:120px;height:4.5px;border-radius:4px;background:var(--ink);transform:translateX(-50%);opacity:.85}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media (max-width:980px){.book-grid{grid-template-columns:1fr}}
-@media (max-width:420px){.phone{height:700px;padding:10px;border-radius:50px}.screen{border-radius:40px}.app-scroll{padding:14px 14px 24px}.slots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.phone{padding:10px;border-radius:50px}.screen{border-radius:40px}.app-scroll{padding:14px 14px 24px}}
 
 /* ---------- final CTA ---------- */
 .final{padding-block:clamp(100px,11vw,170px) clamp(60px,6vw,90px)}
@@ -499,7 +516,8 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
   .track,.strip-track,.badge svg{animation:none!important}
 }
 </style>
-
+</head>
+<body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
@@ -703,7 +721,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
       <p class="lede">Have a process that feels unnecessarily complicated? Let&rsquo;s discuss what&rsquo;s happening and explore whether automation could help.</p>
       <div class="demo-note" role="note">
         <b>How booking works</b>
-        <p>Pick a day and a time that suit you. When you confirm, the call goes straight onto my calendar and you&rsquo;ll get a calendar invitation by email.</p>
+        <p>Choose your time zone, then a date and time. My schedule runs on Pacific Time, and every time is shown converted to the zone you pick, so you always see your own local time.</p>
       </div>
     </div>
     <div class="stage">
@@ -724,8 +742,9 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
               <div class="fld"><label for="bk-email">Email</label><input class="inp" id="bk-email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="err-email"><p class="err" id="err-email"></p></div>
               <div class="fld"><label for="bk-service">Service needed</label><select class="inp" id="bk-service" name="service" required aria-describedby="err-service"><option value="">Choose a service</option></select><p class="err" id="err-service"></p></div>
               <div class="fld"><label for="bk-msg">Message</label><textarea class="inp" id="bk-msg" name="message" rows="3" placeholder="What process would you like to improve?"></textarea></div>
+              <div class="fld"><label for="bk-tz">Your time zone</label><select class="inp" id="bk-tz" name="visitorTimeZone" aria-describedby="tzNote"></select><p class="tz-note" id="tzNote">Appointment times are shown in this time zone.</p></div>
               <fieldset class="fld">
-                <legend id="dateLegend">Date</legend>
+                <legend id="dateLegend">Date <span class="leg-note">(Pacific Time schedule)</span></legend>
                 <div class="cal" id="cal" aria-describedby="err-date">
                   <div class="cal-head">
                     <b id="calMonth" aria-live="polite"></b>
@@ -736,19 +755,19 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
                   </div>
                   <div class="dow" aria-hidden="true"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
                   <div class="days" id="calDays" role="group" aria-labelledby="dateLegend calMonth"></div>
-                  <p class="cal-foot">Available on weekdays.</p>
+                  <p class="cal-foot">Monday to Thursday. Each date has a 10 PM, 12 AM and 2 AM Pacific appointment; the 12 AM and 2 AM times fall on the next Pacific day.</p>
                 </div>
                 <p class="err" id="err-date"></p>
               </fieldset>
               <fieldset class="fld">
                 <legend>Time</legend>
-                <div class="slots" id="slots" aria-describedby="err-time"></div>
-                <p class="slots-hint" id="slotsHint" aria-live="polite">Choose a date to see open times.</p>
+                <div class="slots" id="slots" aria-describedby="err-time slotsHint"></div>
+                <p class="slots-hint" id="slotsHint" aria-live="polite"></p>
                 <p class="err" id="err-time"></p>
               </fieldset>
               <div class="hp" aria-hidden="true"><label for="bk-website">Website</label><input id="bk-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
               <button class="confirm" type="submit" id="bkSubmit">Confirm Booking</button>
-              <p class="demo-tag">You&rsquo;ll receive a calendar invitation by email.</p>
+              <p class="demo-tag">Your booking is confirmed on screen once my calendar accepts it.</p>
             </form>
           </div>
           <span class="home-bar" aria-hidden="true"></span>
@@ -842,20 +861,50 @@ var PROJECTS = [
   { label: "PROJECT 03 — INSERT PROJECT IMAGE", image: "", title: "", problem: "", overview: "", tools: "", status: "" }
 ];
 
-// Bookable days and times. Keep these the same as WEEKDAYS and SLOTS in booking-apps-script.gs.
-var AVAILABILITY = {
-  weekdays: [1, 2, 3, 4],
-  slots: ["10:00 PM", "11:00 PM", "2:00 AM"],
-  monthsAhead: 2,
-  timezone: "America/Los_Angeles"
+/* ====================== BOOKING SETTINGS (start) ======================
+   The business schedule is always Pacific Time. Visitors see it converted to the time zone they choose. */
+var SCHEDULE = {
+  timeZone: "America/Los_Angeles",
+  weekdays: [1, 2, 3, 4],              // schedule dates: 0 = Sunday, 1 = Monday ... 4 = Thursday
+  slots: [                             // dayOffset 1 = the calendar day after the schedule date (Pacific)
+    { label: "10:00 PM", hour: 22, minute: 0, dayOffset: 0 },
+    { label: "12:00 AM", hour: 0,  minute: 0, dayOffset: 1 },
+    { label: "2:00 AM",  hour: 2,  minute: 0, dayOffset: 1 }
+  ],
+  durationMinutes: 25,
+  minNoticeMinutes: 0,                 // slots must start after now + this many minutes
+  monthsAhead: 2
 };
 
-/* Live booking. Paste the Web app URL from your Google Apps Script deployment (it ends in /exec).
-   The page asks it which times are free on a chosen date, then sends the booking to it.
-   The script adds the event to your Google Calendar and emails the client an invitation. */
+// Time zones visitors can choose (IANA names). The visitor's own browser zone is added automatically if missing.
+var TIME_ZONES = [
+  { id: "America/Los_Angeles", label: "Pacific Time" },
+  { id: "America/Denver",      label: "Mountain Time" },
+  { id: "America/Phoenix",     label: "Arizona Time" },
+  { id: "America/Chicago",     label: "Central Time" },
+  { id: "America/New_York",    label: "Eastern Time" },
+  { id: "America/Anchorage",   label: "Alaska Time" },
+  { id: "Pacific/Honolulu",    label: "Hawaii Time" },
+  { id: "America/Toronto",     label: "Toronto" },
+  { id: "America/Mexico_City", label: "Mexico City" },
+  { id: "America/Sao_Paulo",   label: "S\u00e3o Paulo" },
+  { id: "Europe/London",       label: "London" },
+  { id: "Europe/Paris",        label: "Paris / Central Europe" },
+  { id: "Africa/Johannesburg", label: "Johannesburg" },
+  { id: "Asia/Dubai",          label: "Dubai" },
+  { id: "Asia/Kolkata",        label: "India" },
+  { id: "Asia/Manila",         label: "Manila" },
+  { id: "Asia/Singapore",      label: "Singapore" },
+  { id: "Asia/Tokyo",          label: "Tokyo" },
+  { id: "Australia/Sydney",    label: "Sydney" },
+  { id: "Pacific/Auckland",    label: "Auckland" }
+];
+
+// Bookings are sent to this address on your own site (api/booking.js on Vercel), which forwards them to n8n.
 var BOOKING = {
   endpoint: "/api/booking"
 };
+/* ====================== BOOKING SETTINGS (end) ====================== */
 
 /* ===================================================================== */
 (function () {
@@ -1107,287 +1156,281 @@ frame();
   frame();
 })();
 
-/* ---------- booking: calendar ---------- */
-/* ---------- booking: calendar ---------- */
+/* ====================== BOOKING SCRIPT (start) ======================
+   Everything from here to "BOOKING SCRIPT (end)" runs the booking form.
+   - Calendar dates are Pacific "schedule dates": plain year / month / day values. The visitor's device
+     time zone is never used to build them, so the schedule cannot shift.
+   - Each appointment is turned into one exact moment with pacificToInstant(), using the browser's
+     built-in time-zone data (Intl), which follows daylight saving time automatically. No fixed hour offsets.
+   - That exact moment is then shown in whichever time zone the visitor picks, and sent to /api/booking. */
 
-var pacificParts = new Intl.DateTimeFormat('en-US', {
-  timeZone: AVAILABILITY.timezone,
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric'
-}).formatToParts(new Date());
+/* ---------- time-zone helpers (native Intl, no library) ---------- */
+var partFormatters = {};
+// The wall-clock reading (year, month, day, hour, minute, second) of an exact moment in a time zone
+function wallClock(tz, instant) {
+  var f = partFormatters[tz] || (partFormatters[tz] = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'
+  }));
+  var o = {};
+  f.formatToParts(new Date(instant)).forEach(function (p) { if (p.type !== 'literal') o[p.type] = Number(p.value); });
+  if (o.hour === 24) o.hour = 0;
+  return o;
+}
+// How far a time zone's clock is ahead of UTC at a given moment, in milliseconds (changes with daylight saving)
+function zoneOffset(tz, instant) {
+  var w = wallClock(tz, instant), whole = instant - (((instant % 1000) + 1000) % 1000);
+  return Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second) - whole;
+}
+// Finds the exact moment a clock in `tz` shows y-m-d h:mi.
+// Returns { status: 'ok', instant } — or 'nonexistent' (the clock skips that time when daylight saving starts)
+// or 'ambiguous' (the clock shows that time twice when daylight saving ends). Those two are never booked.
+function zonedTimeToInstant(tz, y, m, d, h, mi) {
+  var wall = Date.UTC(y, m - 1, d, h, mi), found = [];
+  [wall - 864e5, wall, wall + 864e5].forEach(function (probe) {
+    var t = wall - zoneOffset(tz, probe), w = wallClock(tz, t);
+    if (w.year === y && w.month === m && w.day === d && w.hour === h && w.minute === mi && found.indexOf(t) < 0) found.push(t);
+  });
+  if (!found.length) return { status: 'nonexistent' };
+  return found.length > 1 ? { status: 'ambiguous' } : { status: 'ok', instant: found[0] };
+}
+// "2026-11-03T00:00:00-08:00": the moment written as a clock time in `tz` with its UTC offset
+function isoWithOffset(tz, instant) {
+  var w = wallClock(tz, instant), off = Math.round(zoneOffset(tz, instant) / 60000), a = Math.abs(off);
+  var p2 = function (n) { return String(n).padStart(2, '0'); };
+  return w.year + '-' + p2(w.month) + '-' + p2(w.day) + 'T' + p2(w.hour) + ':' + p2(w.minute) + ':' + p2(w.second) +
+    (off < 0 ? '-' : '+') + p2(Math.floor(a / 60)) + ':' + p2(a % 60);
+}
+function validZone(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; } }
+function offsetName(tz) {   // "GMT-8", used only as a display label
+  try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).filter(function (p) { return p.type === 'timeZoneName'; })[0].value; }
+  catch (e) { var o = Math.round(zoneOffset(tz, Date.now()) / 60000); return 'GMT' + (o < 0 ? '-' : '+') + Math.floor(Math.abs(o) / 60) + (Math.abs(o) % 60 ? ':' + String(Math.abs(o) % 60).padStart(2, '0') : ''); }
+}
 
-var pacificDate = {};
-pacificParts.forEach(function (part) {
-  if (part.type !== 'literal') {
-    pacificDate[part.type] = Number(part.value);
+/* ---------- calendar dates (plain dates, no device time zone involved) ---------- */
+function dateKey(o) { return o.y + '-' + String(o.m).padStart(2, '0') + '-' + String(o.d).padStart(2, '0'); }
+function addDays(o, n) { var t = new Date(Date.UTC(o.y, o.m - 1, o.d + n)); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }; }
+function weekdayOf(o) { return new Date(Date.UTC(o.y, o.m - 1, o.d)).getUTCDay(); }
+function sameDate(a, b) { return !!a && !!b && a.y === b.y && a.m === b.m && a.d === b.d; }
+function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+function pacificToday() { var w = wallClock(SCHEDULE.timeZone, Date.now()); return { y: w.year, m: w.month, d: w.day }; }
+var fmtPlainLong = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+var fmtPlainShort = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+var fmtPlainMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+function plain(fmt, o) { return fmt.format(new Date(Date.UTC(o.y, o.m - 1, o.d, 12))); }
+
+/* ---------- the business schedule turned into exact moments ---------- */
+// For one Pacific schedule date: every slot with its Pacific calendar day, exact moment, and whether it can be booked
+function slotsFor(dateObj) {
+  var cutoff = Date.now() + SCHEDULE.minNoticeMinutes * 60000;
+  return SCHEDULE.slots.map(function (s, i) {
+    var day = addDays(dateObj, s.dayOffset);
+    var r = zonedTimeToInstant(SCHEDULE.timeZone, day.y, day.m, day.d, s.hour, s.minute);
+    return { index: i, slot: s, pacificDay: day, status: r.status, instant: r.instant,
+      bookable: r.status === 'ok' && r.instant > cutoff };
+  });
+}
+function isOpen(dateObj) {
+  var t = pacificToday();
+  if (dateKey(dateObj) < dateKey(t)) return false;
+  if (SCHEDULE.weekdays.indexOf(weekdayOf(dateObj)) < 0) return false;
+  return slotsFor(dateObj).some(function (c) { return c.bookable; });
+}
+
+/* ---------- visitor time-zone selector ---------- */
+var tzSelect = $('#bk-tz');
+(function buildZones() {
+  var detected = '';
+  try { detected = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+  var list = TIME_ZONES.filter(function (z) { return validZone(z.id); });
+  if (detected && validZone(detected) && !list.some(function (z) { return z.id === detected; })) {
+    list.unshift({ id: detected, label: 'Your time zone (' + detected.replace(/_/g, ' ') + ')' });
   }
-});
+  tzSelect.innerHTML = list.map(function (z) {
+    return '<option value="' + esc(z.id) + '">' + esc(z.label) + ' · ' + esc(offsetName(z.id)) + '</option>';
+  }).join('');
+  tzSelect.value = list.some(function (z) { return z.id === detected; }) ? detected : SCHEDULE.timeZone;
+})();
+function visitorZone() { return tzSelect.value || SCHEDULE.timeZone; }
+function zoneLabel(tz) { var o = tzSelect.querySelector('option[value="' + tz + '"]'); return o ? o.textContent : tz; }
 
-var today = new Date(
-  pacificDate.year,
-  pacificDate.month - 1,
-  pacificDate.day
-);
-
-var view = new Date(today.getFullYear(), today.getMonth(), 1);
-
-var maxView = new Date(
-  today.getFullYear(),
-  today.getMonth() + AVAILABILITY.monthsAhead,
-  1
-);
-
-var state = { date: null, time: '' };
-
-var fmtMonth = new Intl.DateTimeFormat('en-US', {
-  month: 'long',
-  year: 'numeric'
-});
-
-var fmtLong = new Intl.DateTimeFormat('en-US', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric'
-});
-
-function isOpen(d) {
-  return d >= today &&
-    AVAILABILITY.weekdays.indexOf(d.getDay()) > -1;
-}
-
-function same(a, b) {
-  return a && b && a.getTime() === b.getTime();
-}
-
+/* ---------- calendar ---------- */
+var state = { date: null, slot: null };
+var startMonth = (function () { var t = pacificToday(); return { y: t.y, m: t.m }; })();
+var view = { y: startMonth.y, m: startMonth.m };
+function monthIndex(v) { return v.y * 12 + (v.m - 1); }
 function renderCal(focusDay) {
-  $('#calMonth').textContent = fmtMonth.format(view);
-
-  $('#calPrev').disabled =
-    view <= new Date(today.getFullYear(), today.getMonth(), 1);
-
-  $('#calNext').disabled = view >= maxView;
-
-  var first = view.getDay();
-  var dim = new Date(
-    view.getFullYear(),
-    view.getMonth() + 1,
-    0
-  ).getDate();
-
-  var html = '';
-
-  for (var i = 0; i < first; i++) {
-    html += '<span aria-hidden="true"></span>';
-  }
-
+  var t = pacificToday();
+  $('#calMonth').textContent = plain(fmtPlainMonth, { y: view.y, m: view.m, d: 1 });
+  $('#calPrev').disabled = monthIndex(view) <= monthIndex(t);
+  $('#calNext').disabled = monthIndex(view) >= monthIndex(t) + SCHEDULE.monthsAhead;
+  var first = weekdayOf({ y: view.y, m: view.m, d: 1 }), dim = daysInMonth(view.y, view.m), html = '';
+  for (var i = 0; i < first; i++) html += '<span aria-hidden="true"></span>';
   for (var d = 1; d <= dim; d++) {
-    var dt = new Date(view.getFullYear(), view.getMonth(), d);
-    var open = isOpen(dt);
-    var sel = same(dt, state.date);
-
-    html += '<button type="button" class="day' +
-      (same(dt, today) ? ' today' : '') +
-      '" data-d="' + d +
-      '" aria-label="' + fmtLong.format(dt) +
-      (open ? '' : ', unavailable') +
-      '" aria-pressed="' + sel + '"' +
-      (open ? '' : ' disabled') +
-      ' tabindex="-1">' + d + '</button>';
+    var dt = { y: view.y, m: view.m, d: d }, open = isOpen(dt), sel = sameDate(dt, state.date);
+    html += '<button type="button" class="day' + (sameDate(dt, t) ? ' today' : '') + '" data-d="' + d + '" aria-label="' +
+      plain(fmtPlainLong, dt) + (open ? '' : ', unavailable') + '" aria-pressed="' + sel + '"' + (open ? '' : ' disabled') + ' tabindex="-1">' + d + '</button>';
   }
-
   $('#calDays').innerHTML = html;
-
   var btns = $$('.day:not(:disabled)', $('#calDays'));
-
-  var target =
-    (focusDay && $('.day[data-d="' + focusDay + '"]:not(:disabled)', $('#calDays'))) ||
-    $('.day[aria-pressed="true"]', $('#calDays')) ||
-    btns[0];
-
+  var target = (focusDay && $('.day[data-d="' + focusDay + '"]:not(:disabled)', $('#calDays'))) || $('.day[aria-pressed="true"]', $('#calDays')) || btns[0];
   if (target) target.tabIndex = 0;
   if (focusDay && target) target.focus();
 }
-
-$('#calPrev').addEventListener('click', function () {
-  view = new Date(view.getFullYear(), view.getMonth() - 1, 1);
-  renderCal();
-});
-
-$('#calNext').addEventListener('click', function () {
-  view = new Date(view.getFullYear(), view.getMonth() + 1, 1);
-  renderCal();
-});
-
+$('#calPrev').addEventListener('click', function () { var n = monthIndex(view) - 1; view = { y: Math.floor(n / 12), m: n % 12 + 1 }; renderCal(); });
+$('#calNext').addEventListener('click', function () { var n = monthIndex(view) + 1; view = { y: Math.floor(n / 12), m: n % 12 + 1 }; renderCal(); });
 $('#calDays').addEventListener('click', function (e) {
-  var b = e.target.closest('.day');
-
-  if (!b || b.disabled) return;
-
-  state.date = new Date(
-    view.getFullYear(),
-    view.getMonth(),
-    +b.getAttribute('data-d')
-  );
-
-  clearErr('date');
-  renderCal(+b.getAttribute('data-d'));
-  loadAvailability(state.date);
+  var b = e.target.closest('.day'); if (!b || b.disabled) return;
+  var d = +b.getAttribute('data-d'), picked = { y: view.y, m: view.m, d: d };
+  if (!sameDate(picked, state.date)) state.slot = null;
+  state.date = picked;
+  clearErr('date'); renderCal(d); renderSlots();
 });
-
 $('#calDays').addEventListener('keydown', function (e) {
-  var b = e.target.closest('.day');
-  if (!b) return;
-
-  var step = {
-    ArrowLeft: -1,
-    ArrowRight: 1,
-    ArrowUp: -7,
-    ArrowDown: 7
-  }[e.key];
-
-  if (!step) return;
-
+  var b = e.target.closest('.day'); if (!b) return;
+  var step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key]; if (!step) return;
   e.preventDefault();
-
-  var d = +b.getAttribute('data-d');
-  var dim = new Date(
-    view.getFullYear(),
-    view.getMonth() + 1,
-    0
-  ).getDate();
-
-  var n = d + step;
-
+  var d = +b.getAttribute('data-d'), dim = daysInMonth(view.y, view.m), n = d + step;
   while (n >= 1 && n <= dim) {
     var cand = $('.day[data-d="' + n + '"]', $('#calDays'));
-
-    if (cand && !cand.disabled) {
-      $$('.day', $('#calDays')).forEach(function (x) {
-        x.tabIndex = -1;
-      });
-
-      cand.tabIndex = 0;
-      cand.focus();
-      return;
-    }
-
+    if (cand && !cand.disabled) { $$('.day', $('#calDays')).forEach(function (x) { x.tabIndex = -1; }); cand.tabIndex = 0; cand.focus(); return; }
     n += step > 0 ? 1 : -1;
   }
 });
-/* ---------- booking: time slots and services ---------- */
-$('#slots').innerHTML = AVAILABILITY.slots.map(function (s, i) {
-  return '<div class="slot-opt"><input type="radio" name="time" id="slot-' + i + '" value="' + esc(s) + '"><label for="slot-' + i + '">' + esc(s) + '</label></div>';
-}).join('');
-$('#slots').addEventListener('change', function (e) { state.time = e.target.value; clearErr('time'); });
 
-/* ---------- booking: live availability and submission ---------- */
-var tzName = '';
-function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function setHint(t) { $('#slotsHint').textContent = t; }
-function tzLine() { return tzName ? 'Times are shown in ' + tzName + ' time.' : ''; }
-function setSlots(taken, busy) {
-  $$('#slots input').forEach(function (inp) {
-    var off = busy || taken.indexOf(inp.value) > -1;
-    inp.disabled = off;
-    if (off && inp.checked) { inp.checked = false; state.time = ''; }
-  });
+/* ---------- time slots, shown in the visitor's time zone ---------- */
+function fmtIn(tz, opts) { var o = { timeZone: tz }; for (var k in opts) o[k] = opts[k]; return new Intl.DateTimeFormat('en-US', o); }
+function renderSlots() {
+  var box = $('#slots'), tz = visitorZone();
+  if (!state.date) {
+    box.innerHTML = '<p class="slots-empty">Choose a date to see the appointment times.</p>';
+    $('#slotsHint').textContent = '';
+    return;
+  }
+  var tTime = fmtIn(tz, { hour: 'numeric', minute: '2-digit' }), tDay = fmtIn(tz, { weekday: 'short', month: 'short', day: 'numeric' });
+  var pTime = fmtIn(SCHEDULE.timeZone, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  var items = slotsFor(state.date);
+  if (state.slot !== null && !items[state.slot].bookable) state.slot = null;
+  box.innerHTML = items.map(function (c) {
+    var id = 'slot-' + c.index, local, sub, ref;
+    if (c.status !== 'ok') {
+      local = c.slot.label + ' Pacific'; sub = 'Not available (daylight saving change)'; ref = '';
+    } else {
+      local = tTime.format(c.instant); sub = tDay.format(c.instant);
+      ref = pTime.format(c.instant) + '<br>' + plain(fmtPlainShort, c.pacificDay);
+      if (!c.bookable) sub += ' · no longer available';
+    }
+    return '<div class="slot-opt"><input type="radio" name="time" id="' + id + '" value="' + c.index + '"' +
+      (state.slot === c.index ? ' checked' : '') + (c.bookable ? '' : ' disabled') + '>' +
+      '<label for="' + id + '"><span class="lt"><b>' + esc(local) + '</b><small>' + esc(sub) + '</small></span>' +
+      (ref ? '<span class="pt">' + ref + '</span>' : '') + '</label></div>';
+  }).join('');
+  $('#slotsHint').textContent = 'Times shown in ' + zoneLabel(tz) + '. Each call is ' + SCHEDULE.durationMinutes + ' minutes. The right-hand times are my Pacific schedule.';
 }
-var availReq = 0;
-function loadAvailability(date) {
-  if (!BOOKING.endpoint) { setSlots([], false); setHint(''); return Promise.resolve(); }
-  var id = ++availReq;
-  setSlots([], true); setHint('Checking open times\u2026');
-  return fetch(BOOKING.endpoint + '?date=' + ymd(date))
-    .then(function (r) { return r.json(); })
-    .then(function (res) {
-      if (id !== availReq) return;
-      if (!res || !res.ok) throw new Error((res && res.message) || 'Unavailable');
-      if (res.timezone) tzName = res.timezone;
-      setSlots(res.taken || [], false);
-      var open = $$('#slots input').filter(function (i) { return !i.disabled; }).length;
-      setHint(open ? tzLine() || 'Choose a time.' : 'Every time on this day is booked. Please choose another date.');
-    })
-    .catch(function () {
-      if (id !== availReq) return;
-      setSlots([], false);
-      setHint('Open times couldn\u2019t be loaded. You can still pick a time; it\u2019s checked again when you confirm.');
-    });
-}
+$('#slots').addEventListener('change', function (e) {
+  if (e.target.name !== 'time') return;
+  state.slot = Number(e.target.value); clearErr('time');
+});
+tzSelect.addEventListener('change', function () { renderSlots(); });
 $('#bk-service').insertAdjacentHTML('beforeend', SERVICES.map(function (s) { return '<option>' + esc(s.t) + '</option>'; }).join('') + '<option>Not sure yet</option>');
 
-/* ---------- booking: validation and submit ---------- */
-function setErr(k, msg) {
-  $('#err-' + k).textContent = msg;
-  var el = k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k);
-  el.setAttribute('aria-invalid', 'true');
-}
+/* ---------- validation ---------- */
+function errTarget(k) { return k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k); }
+function setErr(k, msg) { $('#err-' + k).textContent = msg; errTarget(k).setAttribute('aria-invalid', 'true'); }
 function clearErr(k) {
   var e = $('#err-' + k); if (e) e.textContent = '';
-  var el = k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k);
-  if (el) el.removeAttribute('aria-invalid');
+  var el = errTarget(k); if (el) el.removeAttribute('aria-invalid');
   if (!$$('.err').some(function (x) { return x.textContent; })) $('#formErr').hidden = true;
 }
 ['name', 'email', 'service'].forEach(function (k) { $('#bk-' + k).addEventListener('input', function () { clearErr(k); }); });
 function validate() {
-  var data = { name: $('#bk-name').value.trim(), email: $('#bk-email').value.trim(), service: $('#bk-service').value, message: $('#bk-msg').value.trim(), date: state.date, time: state.time };
+  var data = { name: $('#bk-name').value.trim(), email: $('#bk-email').value.trim(), service: $('#bk-service').value, message: $('#bk-msg').value.trim() };
   var bad = [];
   if (!data.name) { setErr('name', 'Enter your name.'); bad.push('#bk-name'); }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { setErr('email', 'Enter a valid email address, like name@example.com.'); bad.push('#bk-email'); }
   if (!data.service) { setErr('service', 'Choose the service you need.'); bad.push('#bk-service'); }
-  if (!data.date) { setErr('date', 'Pick a date on the calendar.'); bad.push('.day[tabindex="0"]'); }
-  if (!data.time) { setErr('time', 'Pick a time slot.'); bad.push('#slot-0'); }
+  if (!state.date) { setErr('date', 'Pick a date on the calendar.'); bad.push('.day[tabindex="0"]'); }
+  else if (state.slot === null) { setErr('time', 'Pick an appointment time.'); bad.push('#slots input:not(:disabled)'); }
   return { data: data, bad: bad };
 }
+
+/* ---------- submit to /api/booking ---------- */
+function showFormError(msg) { var fe = $('#formErr'); fe.textContent = msg; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); }
+var sending = false;
 $('#bkForm').addEventListener('submit', function (e) {
   e.preventDefault();
+  if (sending) return;
   var v = validate();
   if (v.bad.length) {
-    var fe = $('#formErr'); fe.textContent = 'Please complete ' + v.bad.length + (v.bad.length === 1 ? ' field' : ' fields') + ' marked below.'; fe.hidden = false;
+    showFormError('Please complete ' + v.bad.length + (v.bad.length === 1 ? ' field' : ' fields') + ' marked below.');
     var f = $(v.bad[0]); if (f) f.focus();
     return;
   }
-  var fe = $('#formErr'), btn = $('#bkSubmit');
-  if (!BOOKING.endpoint) { fe.textContent = 'Online booking isn\u2019t connected yet. Add the booking web app URL to BOOKING.endpoint in this page.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
-  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking\u2026'; fe.hidden = true;
-  var payload = { name: v.data.name, evar payload = {
-  name: v.data.name,
-  email: v.data.email,
-  service: v.data.service,
-  message: v.data.message,
-  scheduleDate: ymd(v.data.date),
-  time: v.data.time,
-  timezone: AVAILABILITY.timezone,
-  website: $('#bk-website').value
-};
-  // text/plain keeps this a simple request, which Google Apps Script web apps accept from any website
+  // Re-check the chosen slot at the moment of booking (the page may have been open for a while)
+  var c = slotsFor(state.date)[state.slot];
+  if (!c || !c.bookable) { state.slot = null; renderSlots(); setErr('time', 'That time is no longer available. Please choose another.'); showFormError('Please choose another time.'); return; }
+
+  var tz = visitorZone(), startMs = c.instant, endMs = startMs + SCHEDULE.durationMinutes * 60000;
+  var payload = {
+    name: v.data.name,
+    email: v.data.email,
+    service: v.data.service,
+    message: v.data.message,
+    scheduleDate: dateKey(state.date),                  // the Pacific schedule date picked on the calendar
+    appointmentDate: dateKey(c.pacificDay),             // the Pacific calendar date the call actually happens on
+    appointmentTime: c.slot.label,                      // Pacific clock time, e.g. "12:00 AM"
+    time: c.slot.label,                                 // same as appointmentTime (kept for existing n8n steps)
+    timezone: SCHEDULE.timeZone,                        // same as businessTimeZone (kept for existing n8n steps)
+    businessTimeZone: SCHEDULE.timeZone,
+    visitorTimeZone: tz,
+    start: new Date(startMs).toISOString(),             // exact start, UTC  ("Z" at the end)
+    end: new Date(endMs).toISOString(),                 // exact end, 25 minutes later, UTC
+    startPacific: isoWithOffset(SCHEDULE.timeZone, startMs),
+    endPacific: isoWithOffset(SCHEDULE.timeZone, endMs),
+    startVisitor: isoWithOffset(tz, startMs),
+    durationMinutes: SCHEDULE.durationMinutes,
+    website: $('#bk-website').value                     // honeypot: real visitors leave this empty
+  };
+  var btn = $('#bkSubmit');
+  sending = true; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking…'; $('#formErr').hidden = true;
   fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then(function (r) { return r.json(); })
-    .then(function (res) {
-      if (!res || !res.ok) {
-        fe.textContent = (res && res.message) || 'The booking couldn\u2019t be completed. Please try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' });
-        if (res && res.code === 'taken') loadAvailability(v.data.date);
-        return;
-      }
-      if (res.timezone) tzName = res.timezone;
-      openModal(v.data, res);
-      resetForm();
+    .then(function (r) {
+      return r.text().then(function (text) {
+        var res = null; try { res = text ? JSON.parse(text) : null; } catch (err) { res = null; }
+        return { httpOk: r.ok, res: res };
+      });
     })
-    .catch(function () { fe.textContent = 'The booking service couldn\u2019t be reached. Check your connection and try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); })
-    .then(function () { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Confirm Booking'; });
+    .then(function (out) {
+      var res = out.res;
+      // Success only when the server explicitly says { "ok": true } — an HTTP 200 alone is not enough
+      if (out.httpOk && res && res.ok === true) { openModal(payload, c, res); resetForm(); return; }
+      // Only show the server's own wording when it explicitly reports a failure ({ ok: false, message })
+      var msg = (res && res.ok === false && typeof res.message === 'string' && res.message) || 'The booking couldn’t be confirmed. Please try again, or choose another time.';
+      showFormError(msg);
+      if (res && res.code === 'taken') { state.slot = null; renderSlots(); }
+    })
+    .catch(function () { showFormError('The booking service couldn’t be reached. Check your connection and try again.'); })
+    .then(function () { sending = false; btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Confirm Booking'; });
 });
 function resetForm() {
-  $('#bkForm').reset(); state = { date: null, time: '' };
-  view = new Date(today.getFullYear(), today.getMonth(), 1);
-  ['name', 'email', 'service', 'date', 'time'].forEach(clearErr); renderCal(); setSlots([], false);
-  setHint('Choose a date to see open times.'); $('#appScroll').scrollTop = 0;
+  var tz = tzSelect.value;
+  $('#bkForm').reset(); tzSelect.value = tz;
+  state = { date: null, slot: null };
+  var t = pacificToday(); view = { y: t.y, m: t.m };
+  ['name', 'email', 'service', 'date', 'time'].forEach(clearErr);
+  renderCal(); renderSlots(); $('#appScroll').scrollTop = 0;
 }
+
+/* ---------- confirmation popup ---------- */
 var modal = $('#bkModal'), lastFocus = null;
-function openModal(d, res) {
-  var when = res.when || (fmtLong.format(d.date) + ' at ' + d.time);
-  $('#mDesc').textContent = 'You\u2019re booked for ' + when + '. A calendar invitation has been sent to ' + d.email + '.';
-  var rows = [['Date', fmtLong.format(d.date)], ['Time', d.time + (tzName ? ' (' + tzName + ')' : '')], ['Service', d.service], ['Name', d.name], ['Email', d.email]];
+function openModal(p, c, res) {
+  var tz = p.visitorTimeZone, full = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+  $('#mDesc').textContent = (typeof res.message === 'string' && res.message) || 'Your call is booked. Here are the details.';
+  var rows = [
+    ['Your time', fmtIn(tz, full).format(c.instant)],
+    ['Pacific time', fmtIn(SCHEDULE.timeZone, full).format(c.instant)],
+    ['Length', SCHEDULE.durationMinutes + ' minutes'],
+    ['Service', p.service], ['Name', p.name], ['Email', p.email]
+  ];
   $('#mSum').innerHTML = rows.map(function (r) { return '<div><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
   lastFocus = document.activeElement; modal.hidden = false; document.body.style.overflow = 'hidden';
   $('#mDone').focus();
@@ -1400,6 +1443,8 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeModal();
   if (e.key === 'Tab') { e.preventDefault(); $('#mDone').focus(); }
 });
+renderSlots();
+/* ====================== BOOKING SCRIPT (end) ====================== */
 
 /* status-bar clock */
 function tickClock() { var n = new Date(); $('#clock').textContent = n.getHours() % 12 || 12; $('#clock').textContent += ':' + String(n.getMinutes()).padStart(2, '0'); }
@@ -1408,3 +1453,5 @@ tickClock(); setInterval(tickClock, 30000);
 renderCal();
 })();
 </script>
+</body>
+</html>
