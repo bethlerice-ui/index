@@ -1099,119 +1099,24 @@ frame();
   frame();
 })();
 
-/* ====================== BOOKING SCRIPT (start) ======================
-   Everything from here to "BOOKING SCRIPT (end)" runs the booking form.
-   - Calendar dates are Pacific "schedule dates": plain year / month / day values. The visitor's device
-     time zone is never used to build them, so the schedule cannot shift.
-   - Each appointment is turned into one exact moment with pacificToInstant(), using the browser's
-     built-in time-zone data (Intl), which follows daylight saving time automatically. No fixed hour offsets.
-   - That exact moment is then shown in whichever time zone the visitor picks, and sent to /api/booking. */
-
-/* ---------- time-zone helpers (native Intl, no library) ---------- */
-var partFormatters = {};
-// The wall-clock reading (year, month, day, hour, minute, second) of an exact moment in a time zone
-function wallClock(tz, instant) {
-  var f = partFormatters[tz] || (partFormatters[tz] = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'
-  }));
-  var o = {};
-  f.formatToParts(new Date(instant)).forEach(function (p) { if (p.type !== 'literal') o[p.type] = Number(p.value); });
-  if (o.hour === 24) o.hour = 0;
-  return o;
-}
-// How far a time zone's clock is ahead of UTC at a given moment, in milliseconds (changes with daylight saving)
-function zoneOffset(tz, instant) {
-  var w = wallClock(tz, instant), whole = instant - (((instant % 1000) + 1000) % 1000);
-  return Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second) - whole;
-}
-// Finds the exact moment a clock in `tz` shows y-m-d h:mi.
-// Returns { status: 'ok', instant } — or 'nonexistent' (the clock skips that time when daylight saving starts)
-// or 'ambiguous' (the clock shows that time twice when daylight saving ends). Those two are never booked.
-function zonedTimeToInstant(tz, y, m, d, h, mi) {
-  var wall = Date.UTC(y, m - 1, d, h, mi), found = [];
-  [wall - 864e5, wall, wall + 864e5].forEach(function (probe) {
-    var t = wall - zoneOffset(tz, probe), w = wallClock(tz, t);
-    if (w.year === y && w.month === m && w.day === d && w.hour === h && w.minute === mi && found.indexOf(t) < 0) found.push(t);
-  });
-  if (!found.length) return { status: 'nonexistent' };
-  return found.length > 1 ? { status: 'ambiguous' } : { status: 'ok', instant: found[0] };
-}
-// "2026-11-03T00:00:00-08:00": the moment written as a clock time in `tz` with its UTC offset
-function isoWithOffset(tz, instant) {
-  var w = wallClock(tz, instant), off = Math.round(zoneOffset(tz, instant) / 60000), a = Math.abs(off);
-  var p2 = function (n) { return String(n).padStart(2, '0'); };
-  return w.year + '-' + p2(w.month) + '-' + p2(w.day) + 'T' + p2(w.hour) + ':' + p2(w.minute) + ':' + p2(w.second) +
-    (off < 0 ? '-' : '+') + p2(Math.floor(a / 60)) + ':' + p2(a % 60);
-}
-function validZone(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; } }
-function offsetName(tz) {   // "GMT-8", used only as a display label
-  try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).filter(function (p) { return p.type === 'timeZoneName'; })[0].value; }
-  catch (e) { var o = Math.round(zoneOffset(tz, Date.now()) / 60000); return 'GMT' + (o < 0 ? '-' : '+') + Math.floor(Math.abs(o) / 60) + (Math.abs(o) % 60 ? ':' + String(Math.abs(o) % 60).padStart(2, '0') : ''); }
-}
-
-/* ---------- calendar dates (plain dates, no device time zone involved) ---------- */
-function dateKey(o) { return o.y + '-' + String(o.m).padStart(2, '0') + '-' + String(o.d).padStart(2, '0'); }
-function addDays(o, n) { var t = new Date(Date.UTC(o.y, o.m - 1, o.d + n)); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() }; }
-function weekdayOf(o) { return new Date(Date.UTC(o.y, o.m - 1, o.d)).getUTCDay(); }
-function sameDate(a, b) { return !!a && !!b && a.y === b.y && a.m === b.m && a.d === b.d; }
-function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
-function pacificToday() { var w = wallClock(SCHEDULE.timeZone, Date.now()); return { y: w.year, m: w.month, d: w.day }; }
-var fmtPlainLong = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-var fmtPlainShort = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
-var fmtPlainMonth = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' });
-function plain(fmt, o) { return fmt.format(new Date(Date.UTC(o.y, o.m - 1, o.d, 12))); }
-
-/* ---------- the business schedule turned into exact moments ---------- */
-// For one Pacific schedule date: every slot with its Pacific calendar day, exact moment, and whether it can be booked
-function slotsFor(dateObj) {
-  var cutoff = Date.now() + SCHEDULE.minNoticeMinutes * 60000;
-  return SCHEDULE.slots.map(function (s, i) {
-    var day = addDays(dateObj, s.dayOffset);
-    var r = zonedTimeToInstant(SCHEDULE.timeZone, day.y, day.m, day.d, s.hour, s.minute);
-    return { index: i, slot: s, pacificDay: day, status: r.status, instant: r.instant,
-      bookable: r.status === 'ok' && r.instant > cutoff };
-  });
-}
-function isOpen(dateObj) {
-  var t = pacificToday();
-  if (dateKey(dateObj) < dateKey(t)) return false;
-  if (SCHEDULE.weekdays.indexOf(weekdayOf(dateObj)) < 0) return false;
-  return slotsFor(dateObj).some(function (c) { return c.bookable; });
-}
-
-/* ---------- visitor time-zone selector ---------- */
-var tzSelect = $('#bk-tz');
-(function buildZones() {
-  var detected = '';
-  try { detected = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-  var list = TIME_ZONES.filter(function (z) { return validZone(z.id); });
-  if (detected && validZone(detected) && !list.some(function (z) { return z.id === detected; })) {
-    list.unshift({ id: detected, label: 'Your time zone (' + detected.replace(/_/g, ' ') + ')' });
-  }
-  tzSelect.innerHTML = list.map(function (z) {
-    return '<option value="' + esc(z.id) + '">' + esc(z.label) + ' · ' + esc(offsetName(z.id)) + '</option>';
-  }).join('');
-  tzSelect.value = list.some(function (z) { return z.id === detected; }) ? detected : SCHEDULE.timeZone;
-})();
-function visitorZone() { return tzSelect.value || SCHEDULE.timeZone; }
-function zoneLabel(tz) { var o = tzSelect.querySelector('option[value="' + tz + '"]'); return o ? o.textContent : tz; }
-
-/* ---------- calendar ---------- */
-var state = { date: null, slot: null };
-var startMonth = (function () { var t = pacificToday(); return { y: t.y, m: t.m }; })();
-var view = { y: startMonth.y, m: startMonth.m };
-function monthIndex(v) { return v.y * 12 + (v.m - 1); }
+/* ---------- booking: calendar ---------- */
+var today = new Date(); today.setHours(0, 0, 0, 0);
+var view = new Date(today.getFullYear(), today.getMonth(), 1);
+var maxView = new Date(today.getFullYear(), today.getMonth() + AVAILABILITY.monthsAhead, 1);
+var state = { date: null, time: '' };
+var fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+var fmtLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+function isOpen(d) { return d >= today && AVAILABILITY.weekdays.indexOf(d.getDay()) > -1; }
+function same(a, b) { return a && b && a.getTime() === b.getTime(); }
 function renderCal(focusDay) {
-  var t = pacificToday();
-  $('#calMonth').textContent = plain(fmtPlainMonth, { y: view.y, m: view.m, d: 1 });
-  $('#calPrev').disabled = monthIndex(view) <= monthIndex(t);
-  $('#calNext').disabled = monthIndex(view) >= monthIndex(t) + SCHEDULE.monthsAhead;
-  var first = weekdayOf({ y: view.y, m: view.m, d: 1 }), dim = daysInMonth(view.y, view.m), html = '';
+  $('#calMonth').textContent = fmtMonth.format(view);
+  $('#calPrev').disabled = view <= new Date(today.getFullYear(), today.getMonth(), 1);
+  $('#calNext').disabled = view >= maxView;
+  var first = view.getDay(), dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(), html = '';
   for (var i = 0; i < first; i++) html += '<span aria-hidden="true"></span>';
   for (var d = 1; d <= dim; d++) {
-    var dt = { y: view.y, m: view.m, d: d }, open = isOpen(dt), sel = sameDate(dt, state.date);
-    html += '<button type="button" class="day' + (sameDate(dt, t) ? ' today' : '') + '" data-d="' + d + '" aria-label="' +
-      plain(fmtPlainLong, dt) + (open ? '' : ', unavailable') + '" aria-pressed="' + sel + '"' + (open ? '' : ' disabled') + ' tabindex="-1">' + d + '</button>';
+    var dt = new Date(view.getFullYear(), view.getMonth(), d), open = isOpen(dt), sel = same(dt, state.date);
+    html += '<button type="button" class="day' + (same(dt, today) ? ' today' : '') + '" data-d="' + d + '" aria-label="' + fmtLong.format(dt) + (open ? '' : ', unavailable') + '" aria-pressed="' + sel + '"' + (open ? '' : ' disabled') + ' tabindex="-1">' + d + '</button>';
   }
   $('#calDays').innerHTML = html;
   var btns = $$('.day:not(:disabled)', $('#calDays'));
@@ -1219,161 +1124,125 @@ function renderCal(focusDay) {
   if (target) target.tabIndex = 0;
   if (focusDay && target) target.focus();
 }
-$('#calPrev').addEventListener('click', function () { var n = monthIndex(view) - 1; view = { y: Math.floor(n / 12), m: n % 12 + 1 }; renderCal(); });
-$('#calNext').addEventListener('click', function () { var n = monthIndex(view) + 1; view = { y: Math.floor(n / 12), m: n % 12 + 1 }; renderCal(); });
+$('#calPrev').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); renderCal(); });
+$('#calNext').addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); renderCal(); });
 $('#calDays').addEventListener('click', function (e) {
   var b = e.target.closest('.day'); if (!b || b.disabled) return;
-  var d = +b.getAttribute('data-d'), picked = { y: view.y, m: view.m, d: d };
-  if (!sameDate(picked, state.date)) state.slot = null;
-  state.date = picked;
-  clearErr('date'); renderCal(d); renderSlots();
+  state.date = new Date(view.getFullYear(), view.getMonth(), +b.getAttribute('data-d'));
+  clearErr('date'); renderCal(+b.getAttribute('data-d'));
+  loadAvailability(state.date);
 });
 $('#calDays').addEventListener('keydown', function (e) {
   var b = e.target.closest('.day'); if (!b) return;
   var step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key]; if (!step) return;
   e.preventDefault();
-  var d = +b.getAttribute('data-d'), dim = daysInMonth(view.y, view.m), n = d + step;
-  while (n >= 1 && n <= dim) {
-    var cand = $('.day[data-d="' + n + '"]', $('#calDays'));
-    if (cand && !cand.disabled) { $$('.day', $('#calDays')).forEach(function (x) { x.tabIndex = -1; }); cand.tabIndex = 0; cand.focus(); return; }
-    n += step > 0 ? 1 : -1;
-  }
+  var d = +b.getAttribute('data-d'), dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(), n = d + step;
+  while (n >= 1 && n <= dim) { var cand = $('.day[data-d="' + n + '"]', $('#calDays')); if (cand && !cand.disabled) { $$('.day', $('#calDays')).forEach(function (x) { x.tabIndex = -1; }); cand.tabIndex = 0; cand.focus(); return; } n += step > 0 ? 1 : -1; }
 });
 
-/* ---------- time slots, shown in the visitor's time zone ---------- */
-function fmtIn(tz, opts) { var o = { timeZone: tz }; for (var k in opts) o[k] = opts[k]; return new Intl.DateTimeFormat('en-US', o); }
-function renderSlots() {
-  var box = $('#slots'), tz = visitorZone();
-  if (!state.date) {
-    box.innerHTML = '<p class="slots-empty">Choose a date to see the appointment times.</p>';
-    $('#slotsHint').textContent = '';
-    return;
-  }
-  var tTime = fmtIn(tz, { hour: 'numeric', minute: '2-digit' }), tDay = fmtIn(tz, { weekday: 'short', month: 'short', day: 'numeric' });
-  var pTime = fmtIn(SCHEDULE.timeZone, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-  var items = slotsFor(state.date);
-  if (state.slot !== null && !items[state.slot].bookable) state.slot = null;
-  box.innerHTML = items.map(function (c) {
-    var id = 'slot-' + c.index, local, sub, ref;
-    if (c.status !== 'ok') {
-      local = c.slot.label + ' Pacific'; sub = 'Not available (daylight saving change)'; ref = '';
-    } else {
-      local = tTime.format(c.instant); sub = tDay.format(c.instant);
-      ref = pTime.format(c.instant) + '<br>' + plain(fmtPlainShort, c.pacificDay);
-      if (!c.bookable) sub += ' · no longer available';
-    }
-    return '<div class="slot-opt"><input type="radio" name="time" id="' + id + '" value="' + c.index + '"' +
-      (state.slot === c.index ? ' checked' : '') + (c.bookable ? '' : ' disabled') + '>' +
-      '<label for="' + id + '"><span class="lt"><b>' + esc(local) + '</b><small>' + esc(sub) + '</small></span>' +
-      (ref ? '<span class="pt">' + ref + '</span>' : '') + '</label></div>';
-  }).join('');
-  $('#slotsHint').textContent = 'Times shown in ' + zoneLabel(tz) + '. Each call is ' + SCHEDULE.durationMinutes + ' minutes. The right-hand times are my Pacific schedule.';
+/* ---------- booking: time slots and services ---------- */
+$('#slots').innerHTML = AVAILABILITY.slots.map(function (s, i) {
+  return '<div class="slot-opt"><input type="radio" name="time" id="slot-' + i + '" value="' + esc(s) + '"><label for="slot-' + i + '">' + esc(s) + '</label></div>';
+}).join('');
+$('#slots').addEventListener('change', function (e) { state.time = e.target.value; clearErr('time'); });
+
+/* ---------- booking: live availability and submission ---------- */
+var tzName = '';
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function setHint(t) { $('#slotsHint').textContent = t; }
+function tzLine() { return tzName ? 'Times are shown in ' + tzName + ' time.' : ''; }
+function setSlots(taken, busy) {
+  $$('#slots input').forEach(function (inp) {
+    var off = busy || taken.indexOf(inp.value) > -1;
+    inp.disabled = off;
+    if (off && inp.checked) { inp.checked = false; state.time = ''; }
+  });
 }
-$('#slots').addEventListener('change', function (e) {
-  if (e.target.name !== 'time') return;
-  state.slot = Number(e.target.value); clearErr('time');
-});
-tzSelect.addEventListener('change', function () { renderSlots(); });
+var availReq = 0;
+function loadAvailability(date) {
+  if (!BOOKING.endpoint) { setSlots([], false); setHint(''); return Promise.resolve(); }
+  var id = ++availReq;
+  setSlots([], true); setHint('Checking open times\u2026');
+  return fetch(BOOKING.endpoint + '?date=' + ymd(date))
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (id !== availReq) return;
+      if (!res || !res.ok) throw new Error((res && res.message) || 'Unavailable');
+      if (res.timezone) tzName = res.timezone;
+      setSlots(res.taken || [], false);
+      var open = $$('#slots input').filter(function (i) { return !i.disabled; }).length;
+      setHint(open ? tzLine() || 'Choose a time.' : 'Every time on this day is booked. Please choose another date.');
+    })
+    .catch(function () {
+      if (id !== availReq) return;
+      setSlots([], false);
+      setHint('Open times couldn\u2019t be loaded. You can still pick a time; it\u2019s checked again when you confirm.');
+    });
+}
 $('#bk-service').insertAdjacentHTML('beforeend', SERVICES.map(function (s) { return '<option>' + esc(s.t) + '</option>'; }).join('') + '<option>Not sure yet</option>');
 
-/* ---------- validation ---------- */
-function errTarget(k) { return k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k); }
-function setErr(k, msg) { $('#err-' + k).textContent = msg; errTarget(k).setAttribute('aria-invalid', 'true'); }
+/* ---------- booking: validation and submit ---------- */
+function setErr(k, msg) {
+  $('#err-' + k).textContent = msg;
+  var el = k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k);
+  el.setAttribute('aria-invalid', 'true');
+}
 function clearErr(k) {
   var e = $('#err-' + k); if (e) e.textContent = '';
-  var el = errTarget(k); if (el) el.removeAttribute('aria-invalid');
+  var el = k === 'date' ? $('#cal') : k === 'time' ? $('#slots') : $('#bk-' + k);
+  if (el) el.removeAttribute('aria-invalid');
   if (!$$('.err').some(function (x) { return x.textContent; })) $('#formErr').hidden = true;
 }
 ['name', 'email', 'service'].forEach(function (k) { $('#bk-' + k).addEventListener('input', function () { clearErr(k); }); });
 function validate() {
-  var data = { name: $('#bk-name').value.trim(), email: $('#bk-email').value.trim(), service: $('#bk-service').value, message: $('#bk-msg').value.trim() };
+  var data = { name: $('#bk-name').value.trim(), email: $('#bk-email').value.trim(), service: $('#bk-service').value, message: $('#bk-msg').value.trim(), date: state.date, time: state.time };
   var bad = [];
   if (!data.name) { setErr('name', 'Enter your name.'); bad.push('#bk-name'); }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { setErr('email', 'Enter a valid email address, like name@example.com.'); bad.push('#bk-email'); }
   if (!data.service) { setErr('service', 'Choose the service you need.'); bad.push('#bk-service'); }
-  if (!state.date) { setErr('date', 'Pick a date on the calendar.'); bad.push('.day[tabindex="0"]'); }
-  else if (state.slot === null) { setErr('time', 'Pick an appointment time.'); bad.push('#slots input:not(:disabled)'); }
+  if (!data.date) { setErr('date', 'Pick a date on the calendar.'); bad.push('.day[tabindex="0"]'); }
+  if (!data.time) { setErr('time', 'Pick a time slot.'); bad.push('#slot-0'); }
   return { data: data, bad: bad };
 }
-
-/* ---------- submit to /api/booking ---------- */
-function showFormError(msg) { var fe = $('#formErr'); fe.textContent = msg; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); }
-var sending = false;
 $('#bkForm').addEventListener('submit', function (e) {
   e.preventDefault();
-  if (sending) return;
   var v = validate();
   if (v.bad.length) {
-    showFormError('Please complete ' + v.bad.length + (v.bad.length === 1 ? ' field' : ' fields') + ' marked below.');
+    var fe = $('#formErr'); fe.textContent = 'Please complete ' + v.bad.length + (v.bad.length === 1 ? ' field' : ' fields') + ' marked below.'; fe.hidden = false;
     var f = $(v.bad[0]); if (f) f.focus();
     return;
   }
-  // Re-check the chosen slot at the moment of booking (the page may have been open for a while)
-  var c = slotsFor(state.date)[state.slot];
-  if (!c || !c.bookable) { state.slot = null; renderSlots(); setErr('time', 'That time is no longer available. Please choose another.'); showFormError('Please choose another time.'); return; }
-
-  var tz = visitorZone(), startMs = c.instant, endMs = startMs + SCHEDULE.durationMinutes * 60000;
-  var payload = {
-    name: v.data.name,
-    email: v.data.email,
-    service: v.data.service,
-    message: v.data.message,
-    scheduleDate: dateKey(state.date),                  // the Pacific schedule date picked on the calendar
-    appointmentDate: dateKey(c.pacificDay),             // the Pacific calendar date the call actually happens on
-    appointmentTime: c.slot.label,                      // Pacific clock time, e.g. "12:00 AM"
-    time: c.slot.label,                                 // same as appointmentTime (kept for existing n8n steps)
-    timezone: SCHEDULE.timeZone,                        // same as businessTimeZone (kept for existing n8n steps)
-    businessTimeZone: SCHEDULE.timeZone,
-    visitorTimeZone: tz,
-    start: new Date(startMs).toISOString(),             // exact start, UTC  ("Z" at the end)
-    end: new Date(endMs).toISOString(),                 // exact end, 25 minutes later, UTC
-    startPacific: isoWithOffset(SCHEDULE.timeZone, startMs),
-    endPacific: isoWithOffset(SCHEDULE.timeZone, endMs),
-    startVisitor: isoWithOffset(tz, startMs),
-    durationMinutes: SCHEDULE.durationMinutes,
-    website: $('#bk-website').value                     // honeypot: real visitors leave this empty
-  };
-  var btn = $('#bkSubmit');
-  sending = true; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking…'; $('#formErr').hidden = true;
-  fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then(function (r) {
-      return r.text().then(function (text) {
-        var res = null; try { res = text ? JSON.parse(text) : null; } catch (err) { res = null; }
-        return { httpOk: r.ok, res: res };
-      });
+  var fe = $('#formErr'), btn = $('#bkSubmit');
+  if (!BOOKING.endpoint) { fe.textContent = 'Online booking isn\u2019t connected yet. Add the booking web app URL to BOOKING.endpoint in this page.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); return; }
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Booking\u2026'; fe.hidden = true;
+  var payload = { name: v.data.name, email: v.data.email, service: v.data.service, message: v.data.message, date: ymd(v.data.date), time: v.data.time, website: $('#bk-website').value };
+  // text/plain keeps this a simple request, which Google Apps Script web apps accept from any website
+  fetch(BOOKING.endpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok) {
+        fe.textContent = (res && res.message) || 'The booking couldn\u2019t be completed. Please try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' });
+        if (res && res.code === 'taken') loadAvailability(v.data.date);
+        return;
+      }
+      if (res.timezone) tzName = res.timezone;
+      openModal(v.data, res);
+      resetForm();
     })
-    .then(function (out) {
-      var res = out.res;
-      // Success only when the server explicitly says { "ok": true } — an HTTP 200 alone is not enough
-      if (out.httpOk && res && res.ok === true) { openModal(payload, c, res); resetForm(); return; }
-      // Only show the server's own wording when it explicitly reports a failure ({ ok: false, message })
-      var msg = (res && res.ok === false && typeof res.message === 'string' && res.message) || 'The booking couldn’t be confirmed. Please try again, or choose another time.';
-      showFormError(msg);
-      if (res && res.code === 'taken') { state.slot = null; renderSlots(); }
-    })
-    .catch(function () { showFormError('The booking service couldn’t be reached. Check your connection and try again.'); })
-    .then(function () { sending = false; btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Confirm Booking'; });
+    .catch(function () { fe.textContent = 'The booking service couldn\u2019t be reached. Check your connection and try again.'; fe.hidden = false; fe.scrollIntoView({ block: 'nearest' }); })
+    .then(function () { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Confirm Booking'; });
 });
 function resetForm() {
-  var tz = tzSelect.value;
-  $('#bkForm').reset(); tzSelect.value = tz;
-  state = { date: null, slot: null };
-  var t = pacificToday(); view = { y: t.y, m: t.m };
-  ['name', 'email', 'service', 'date', 'time'].forEach(clearErr);
-  renderCal(); renderSlots(); $('#appScroll').scrollTop = 0;
+  $('#bkForm').reset(); state = { date: null, time: '' };
+  view = new Date(today.getFullYear(), today.getMonth(), 1);
+  ['name', 'email', 'service', 'date', 'time'].forEach(clearErr); renderCal(); setSlots([], false);
+  setHint('Choose a date to see open times.'); $('#appScroll').scrollTop = 0;
 }
-
-/* ---------- confirmation popup ---------- */
 var modal = $('#bkModal'), lastFocus = null;
-function openModal(p, c, res) {
-  var tz = p.visitorTimeZone, full = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
-  $('#mDesc').textContent = (typeof res.message === 'string' && res.message) || 'Your call is booked. Here are the details.';
-  var rows = [
-    ['Your time', fmtIn(tz, full).format(c.instant)],
-    ['Pacific time', fmtIn(SCHEDULE.timeZone, full).format(c.instant)],
-    ['Length', SCHEDULE.durationMinutes + ' minutes'],
-    ['Service', p.service], ['Name', p.name], ['Email', p.email]
-  ];
+function openModal(d, res) {
+  var when = res.when || (fmtLong.format(d.date) + ' at ' + d.time);
+  $('#mDesc').textContent = 'You\u2019re booked for ' + when + '. A calendar invitation has been sent to ' + d.email + '.';
+  var rows = [['Date', fmtLong.format(d.date)], ['Time', d.time + (tzName ? ' (' + tzName + ')' : '')], ['Service', d.service], ['Name', d.name], ['Email', d.email]];
   $('#mSum').innerHTML = rows.map(function (r) { return '<div><dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
   lastFocus = document.activeElement; modal.hidden = false; document.body.style.overflow = 'hidden';
   $('#mDone').focus();
@@ -1386,8 +1255,6 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') closeModal();
   if (e.key === 'Tab') { e.preventDefault(); $('#mDone').focus(); }
 });
-renderSlots();
-/* ====================== BOOKING SCRIPT (end) ====================== */
 
 /* status-bar clock */
 function tickClock() { var n = new Date(); $('#clock').textContent = n.getHours() % 12 || 12; $('#clock').textContent += ':' + String(n.getMinutes()).padStart(2, '0'); }
@@ -1396,5 +1263,3 @@ tickClock(); setInterval(tickClock, 30000);
 renderCal();
 })();
 </script>
-</body>
-</html>
