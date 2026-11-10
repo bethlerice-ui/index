@@ -10,9 +10,17 @@ const server = http.createServer(async (req, res) => {
   if (req.url?.split('?')[0] === '/api/booking') {
     let body = '';
 
-    for await (const chunk of req) {
-      body += chunk;
-    }
+for await (const chunk of req) {
+  body += chunk;
+
+  if (Buffer.byteLength(body, 'utf8') > 100_000) {
+    res.writeHead(413, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      ok: false,
+      message: 'Booking request is too large.'
+    }));
+  }
+}
 
     try {
       req.body = body ? JSON.parse(body) : {};
