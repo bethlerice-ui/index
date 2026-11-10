@@ -39,6 +39,12 @@ const server = http.createServer(async (req, res) => {
 
   const urlPath = decodeURIComponent(req.url?.split('?')[0] || '/');
   const requestedPath = urlPath === '/' ? '/index.html' : urlPath;
+  const blocked = ['/api/', '/server.js', '/.git/', '/.env', '/package.json'];
+
+if (blocked.some(p => requestedPath === p || requestedPath.startsWith(p))) {
+  res.writeHead(404);
+  return res.end('Not found');
+}
   const filePath = path.resolve(__dirname, '.' + requestedPath);
 
   if (!filePath.startsWith(__dirname + path.sep)) {
