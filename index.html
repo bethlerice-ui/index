@@ -1475,7 +1475,7 @@ function sendBooking(payload, c, btn) {
     .then(function (out) {
       var res = out.res;
       // Success only when the server explicitly says { "ok": true } — an HTTP 200 alone is not enough
-      if (out.httpOk && res && res.ok === true) { busy.push([c.instant, c.instant + SCHEDULE.durationMinutes * 60000]); openModal(payload, c, res); resetForm(); refreshAvailability(true); return; }
+      if (out.httpOk && res && res.success === true) { busy.push([c.instant, c.instant + SCHEDULE.durationMinutes * 60000]); openModal(payload, c, res); resetForm(); refreshAvailability(true); return; }
       // Only show the server's own wording when it explicitly reports a failure ({ ok: false, message })
       var msg = (res && res.ok === false && typeof res.message === 'string' && res.message) || 'The booking couldn\u2019t be confirmed. Please try again, or choose another time.';
       showFormError(msg);
